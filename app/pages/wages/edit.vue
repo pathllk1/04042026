@@ -4,25 +4,30 @@
 
     <!-- ── Filters ────────────────────────────────────────────────────── -->
     <UCard class="mb-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
 
         <UFormField label="Select Month">
           <UInput type="month" v-model="selectedMonth" :max="new Date().toISOString().slice(0, 7)" class="w-full" @change="loadWageRecords" />
         </UFormField>
 
-        <UFormField label="Cheque No">
-          <USelect v-model="chequeFilter" :items="chequeItems" class="w-full" @update:model-value="loadWageRecords" />
+        <UFormField label="Cheque No (Filter)">
+          <USelect v-model="chequeFilter" :items="chequeItems" clearable class="w-full" @update:model-value="loadWageRecords" />
+        </UFormField>
+
+        <UFormField label="Cheque No (Edit)">
+          <UInput v-model="paymentDetails.cheque_no" placeholder="Enter cheque number" class="w-full" />
         </UFormField>
 
         <UFormField label="Select Bank">
-          <USelect v-model="selectedBankId" :items="bankItems" :disabled="loadingLedgers" class="w-full" />
+          <USelect v-model="selectedBankId" :items="bankItems" :disabled="loadingLedgers" clearable class="w-full" />
         </UFormField>
 
         <UFormField label="Payment Date">
           <UInput type="date" v-model="paymentDetails.paid_date" class="w-full" />
         </UFormField>
 
-        <UFormField label=" ">
+        <div class="flex flex-col gap-1">
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-200 h-5"></div>
           <UButton
             color="success"
             icon="i-lucide-save"
@@ -33,7 +38,7 @@
           >
             {{ loading ? 'Processing…' : 'Save Changes' }}
           </UButton>
-        </UFormField>
+        </div>
       </div>
     </UCard>
 
@@ -333,18 +338,16 @@ const uniqueChequeNumbers = computed(() => {
   return [...new Set(nos)].sort()
 })
 
-const chequeItems = computed(() => [
-  { label: 'All', value: '' },
-  ...uniqueChequeNumbers.value.map(c => ({ label: String(c), value: String(c) }))
-])
+const chequeItems = computed(() =>
+  uniqueChequeNumbers.value.map(c => ({ label: String(c), value: String(c) }))
+)
 
-const bankItems = computed(() => [
-  { label: '-- Select Bank --', value: '' },
-  ...bankLedgers.value.map((b: any) => ({
+const bankItems = computed(() =>
+  bankLedgers.value.map((b: any) => ({
     label: `${b.name} - ${b.bankDetails?.accountNumber || 'N/A'}`,
     value: b.id
   }))
-])
+)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const notify = (msg: string, type: 'success' | 'error' | 'warning' = 'success') =>
@@ -490,7 +493,7 @@ const saveWages = async () => {
       paid_from_bank_ac: paymentDetails.paid_from_bank_ac
     }))
 
-    const response = await api.put('/api/wages/bulk', { wages: toUpdate, deleteIds: toDelete })
+    const response = await api.put('/api/wages', { wages: toUpdate, deleteWages: toDelete, month: selectedMonth.value })
     if (response.success) {
       notify(`Successfully updated ${response.updatedCount || toUpdate.length} wage records.`)
       await loadWageRecords()
@@ -576,9 +579,25 @@ const applyAdvanceRecovery = (advance: any) => {
   const gross = Number(wage.pDayWage) * Number(wage.wage_Days)
   const calcs = calculateWithCurrentRules(gross)
   const netBefore = gross - (calcs.employeeEpf + calcs.employeeEsic + (Number(wage.other_deduction) || 0)) + (Number(wage.other_benefit) || 0)
-  wage.advance_recovery  = Math.min(advance.remainingBalance, Math.max(0, netBefore))
+  
+  // VALIDATION: Check if recovery amount is valid
+  const maxRecovery = Math.min(advance.remainingBalance, Math.max(0, netBefore))
+  
+  if (maxRecovery <= 0) {
+    notify('Cannot recover from this advance. Insufficient net salary.', 'error')
+    return
+  }
+  
+  // Check if this employee already has a recovery in current batch
+  const existingRecovery = wage.selectedAdvanceId
+  if (existingRecovery && existingRecovery !== advance._id) {
+    const confirmed = confirm(`This employee already has advance recovery selected. Do you want to change it?`)
+    if (!confirmed) return
+  }
+  
+  wage.advance_recovery  = maxRecovery
   wage.selectedAdvanceId = advance._id
-  calculateWage(c-urrentEmployeeIndex.value)
+  calculateWage(currentEmployeeIndex.value)
   closeAdvancesModal()
 }
 

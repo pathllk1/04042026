@@ -12,6 +12,10 @@ const navigation = [
   { label: 'Home', to: '/', icon: 'i-heroicons-home' }
 ]
 
+const documentsMenu = [
+  { label: 'Documents', to: '/documents', icon: 'i-lucide-file-text', description: 'Manage your important documents' }
+]
+
 const wagesMenuItems = [
   { label: 'Master Roll', to: '/wages/master_roll', icon: 'i-lucide-users', description: 'Manage employee database and master roll' },
   { label: 'Dashboard', to: '/wages/dashboard', icon: 'i-lucide-layout-dashboard', description: 'Overview of wages and statistics' },
@@ -78,6 +82,13 @@ const wagesMenuItems = [
                 }"
               />
             </UDropdownMenu>
+            <NuxtLink 
+              v-if="isLoggedIn"
+              to="/documents" 
+              class="text-sm font-medium hover:text-primary transition-colors"
+            >
+              Documents
+            </NuxtLink>
           </nav>
         </div>
       </template>
@@ -188,6 +199,23 @@ const wagesMenuItems = [
                 </UTooltip>
               </template>
             </template>
+
+            <!-- Documents Link -->
+            <template v-if="isLoggedIn">
+              <UTooltip 
+                text="Documents"
+                :side="isSidebarCollapsed ? 'right' : undefined"
+              >
+                <NuxtLink 
+                  to="/documents" 
+                  class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                  active-class="bg-gray-100 dark:bg-gray-800 text-primary"
+                >
+                  <UIcon name="i-lucide-file-text" class="text-xl shrink-0" />
+                  <span v-if="!isSidebarCollapsed" class="text-sm font-medium truncate">Documents</span>
+                </NuxtLink>
+              </UTooltip>
+            </template>
           </nav>
         </div>
 
@@ -253,6 +281,22 @@ const wagesMenuItems = [
               >
                 <UIcon :name="item.icon" class="text-xl" />
                 <span>{{ item.label }}</span>
+              </NuxtLink>
+            </template>
+
+            <!-- Documents Link -->
+            <template v-if="isLoggedIn">
+              <div class="pt-2 mt-2 border-t">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-4 py-2 uppercase">Other</p>
+              </div>
+              <NuxtLink 
+                to="/documents" 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                active-class="bg-gray-100 dark:bg-gray-800 text-primary font-semibold"
+                @click="isMobileMenuOpen = false"
+              >
+                <UIcon name="i-lucide-file-text" class="text-xl" />
+                <span>Documents</span>
               </NuxtLink>
             </template>
           </nav>

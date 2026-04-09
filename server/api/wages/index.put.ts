@@ -72,30 +72,72 @@ export default defineEventHandler(async (event) => {
           if (updatedWage) {
             updateCount++;
 
-            // Process advance recovery if applicable
-            if (wageData.advance_recovery > 0 && wageData.selectedAdvanceId) {
-              // First, check if any existing recovery record exists for this wage (regardless of advance ID)
-              const existingRecovery = await AdvanceRecovery.findOne({
-                wageId: updatedWage._id
+            // Get existing recovery record if any
+            const existingRecovery = await AdvanceRecovery.findOne({
+              wageId: updatedWage._id
+            }).session(session);
+
+            // CASE 1: Recovery removed (set to 0)
+            if (wageData.advance_recovery === 0 && existingRecovery) {
+              // Restore advance balance
+              const advance = await EmployeeAdvance.findById(existingRecovery.advanceId).session(session);
+
+              if (advance) {
+                const newBalance = advance.remainingBalance + existingRecovery.recoveryAmount;
+                const newStatus = newBalance >= advance.amount ? 'approved' : 'partially_recovered';
+
+                await EmployeeAdvance.findByIdAndUpdate(
+                  existingRecovery.advanceId,
+                  {
+                    remainingBalance: newBalance,
+                    status: newStatus
+                  },
+                  { session }
+                );
+              }
+
+              // Mark recovery as reversed
+              await AdvanceRecovery.findByIdAndUpdate(
+                existingRecovery._id,
+                {
+                  status: 'reversed',
+                  reason: `Reversed - recovery removed from wage on ${new Date().toLocaleDateString()}`
+                },
+                { session }
+              );
+
+              // Clear recovery ID from wage
+              await Wage.findByIdAndUpdate(
+                updatedWage._id,
+                { advance_recovery_id: null },
+                { session }
+              );
+
+              advanceRecoveryCount++;
+            }
+            // CASE 2: Recovery exists and needs update
+            else if (wageData.advance_recovery > 0 && wageData.selectedAdvanceId) {
+              // Validate new advance exists
+              const newAdvance = await EmployeeAdvance.findOne({
+                _id: wageData.selectedAdvanceId,
+                firmId,
+                status: { $in: ['approved', 'partially_recovered'] }
               }).session(session);
 
-              // Get the new advance record
-              const newAdvance = await EmployeeAdvance.findById(wageData.selectedAdvanceId).session(session);
-
               if (!newAdvance) {
-                continue; // Skip if new advance not found
+                throw new Error(`Advance not found or not available for recovery for ${wageData.employeeName}`);
               }
 
               if (existingRecovery) {
-                // If the advance ID has changed, we need to handle both the old and new advances
+                // CASE 2A: Advance ID changed
                 if (existingRecovery.advanceId.toString() !== wageData.selectedAdvanceId) {
-                  // Get the old advance record
+                  // Get old advance
                   const oldAdvance = await EmployeeAdvance.findById(existingRecovery.advanceId).session(session);
 
                   if (oldAdvance) {
-                    // Restore the old advance's remaining balance by adding back the previous recovery amount
+                    // Restore old advance balance
                     const oldAdvanceNewBalance = oldAdvance.remainingBalance + existingRecovery.recoveryAmount;
-                    const oldAdvanceNewStatus = oldAdvanceNewBalance >= oldAdvance.amount ? 'paid' : 'partially_recovered';
+                    const oldAdvanceNewStatus = oldAdvanceNewBalance >= oldAdvance.amount ? 'approved' : 'partially_recovered';
 
                     await EmployeeAdvance.findByIdAndUpdate(
                       existingRecovery.advanceId,
@@ -103,110 +145,142 @@ export default defineEventHandler(async (event) => {
                         remainingBalance: oldAdvanceNewBalance,
                         status: oldAdvanceNewStatus
                       },
-                      { new: true, session }
+                      { session }
                     );
                   }
 
-                  // Update the recovery record with the new advance ID and amount
-                  const updatedRecovery = await AdvanceRecovery.findByIdAndUpdate(
-                    existingRecovery._id,
-                    {
-                      advanceId: wageData.selectedAdvanceId,
-                      recoveryAmount: wageData.advance_recovery,
-                      updatedAt: new Date()
-                    },
-                    { new: true, session }
-                  );
+                  // Delete old recovery record
+                  await AdvanceRecovery.findByIdAndDelete(existingRecovery._id, { session });
 
-                  // Update the wage record with the recovery ID
+                  // Create new recovery record for new advance
+                  const newBalance = newAdvance.remainingBalance - wageData.advance_recovery;
+                  const newStatus = newBalance <= 0 ? 'fully_recovered' : 'partially_recovered';
+
+                  if (newAdvance.remainingBalance < wageData.advance_recovery) {
+                    throw new Error(`Cannot recover ₹${wageData.advance_recovery} from advance. Insufficient balance of ₹${newAdvance.remainingBalance}.`);
+                  }
+
+                  const newRecovery = new AdvanceRecovery({
+                    advanceId: wageData.selectedAdvanceId,
+                    employeeId: wageData.masterRollId,
+                    employeeName: wageData.employeeName,
+                    recoveryAmount: wageData.advance_recovery,
+                    recoveryDate: new Date(wageData.salary_month),
+                    recoveryMethod: 'salary_deduction',
+                    status: newStatus === 'fully_recovered' ? 'completed' : 'pending',
+                    reason: `Salary deduction for ${new Date(wageData.salary_month).toLocaleDateString()} (changed from advance ${existingRecovery.advanceId})`,
+                    previousBalance: newAdvance.remainingBalance,
+                    newBalance: newBalance,
+                    wageId: updatedWage._id,
+                    userId,
+                    firmId
+                  });
+
+                  const savedRecovery = await newRecovery.save({ session });
+
+                  // Update wage with new recovery ID
                   await Wage.findByIdAndUpdate(
                     updatedWage._id,
+                    { advance_recovery_id: savedRecovery._id },
+                    { session }
+                  );
+
+                  // Update new advance balance
+                  await EmployeeAdvance.findByIdAndUpdate(
+                    wageData.selectedAdvanceId,
                     {
-                      advance_recovery_id: updatedRecovery._id
+                      remainingBalance: newBalance,
+                      status: newStatus
                     },
                     { session }
                   );
 
-                  // Update the new advance's remaining balance
-                  const newRemainingBalance = Math.max(0, newAdvance.remainingBalance - wageData.advance_recovery);
-                  const newStatus = newRemainingBalance === 0 ? 'fully_recovered' : 'partially_recovered';
+                  advanceRecoveryCount++;
+                }
+                // CASE 2B: Same advance, amount changed
+                else {
+                  const amountDifference = wageData.advance_recovery - existingRecovery.recoveryAmount;
 
-                  await EmployeeAdvance.findByIdAndUpdate(
-                    wageData.selectedAdvanceId,
-                    {
-                      remainingBalance: newRemainingBalance,
-                      status: newStatus
-                    },
-                    { new: true, session }
-                  );
-                } else {
-                  // Same advance, just update the amount if it changed
-                  const recoveryDifference = wageData.advance_recovery - existingRecovery.recoveryAmount;
+                  if (amountDifference !== 0) {
+                    // Validate new amount doesn't exceed remaining balance
+                    const totalAvailable = newAdvance.remainingBalance + existingRecovery.recoveryAmount;
 
-                  if (recoveryDifference !== 0) {
-                    // Update the existing recovery record
+                    if (wageData.advance_recovery > totalAvailable) {
+                      throw new Error(`Cannot change recovery to ₹${wageData.advance_recovery}. Available balance: ₹${totalAvailable}.`);
+                    }
+
+                    const newBalance = totalAvailable - wageData.advance_recovery;
+                    const newStatus = newBalance <= 0 ? 'fully_recovered' : 'partially_recovered';
+
+                    // Update recovery record
                     await AdvanceRecovery.findByIdAndUpdate(
                       existingRecovery._id,
                       {
                         recoveryAmount: wageData.advance_recovery,
-                        updatedAt: new Date()
+                        status: newStatus === 'fully_recovered' ? 'completed' : 'pending',
+                        previousBalance: totalAvailable,
+                        newBalance: newBalance,
+                        reason: `Amount changed from ₹${existingRecovery.recoveryAmount} to ₹${wageData.advance_recovery}`
                       },
                       { session }
                     );
 
-                    // Only adjust the advance's remaining balance by the difference
-                    const newRemainingBalance = Math.max(0, newAdvance.remainingBalance - recoveryDifference);
-                    const newStatus = newRemainingBalance === 0 ? 'fully_recovered' : 'partially_recovered';
-
+                    // Update advance balance
                     await EmployeeAdvance.findByIdAndUpdate(
                       wageData.selectedAdvanceId,
                       {
-                        remainingBalance: newRemainingBalance,
+                        remainingBalance: newBalance,
                         status: newStatus
                       },
-                      { new: true, session }
+                      { session }
                     );
+
+                    advanceRecoveryCount++;
                   }
                 }
+              }
+              // CASE 2C: No existing recovery, create new one
+              else {
+                const newBalance = newAdvance.remainingBalance - wageData.advance_recovery;
+                const newStatus = newBalance <= 0 ? 'fully_recovered' : 'partially_recovered';
 
-                advanceRecoveryCount++;
-              } else {
-                // No existing recovery record, create a new one
+                if (newAdvance.remainingBalance < wageData.advance_recovery) {
+                  throw new Error(`Cannot recover ₹${wageData.advance_recovery} from advance. Insufficient balance of ₹${newAdvance.remainingBalance}.`);
+                }
+
                 const recovery = new AdvanceRecovery({
                   advanceId: wageData.selectedAdvanceId,
                   employeeId: wageData.masterRollId,
                   employeeName: wageData.employeeName,
                   recoveryAmount: wageData.advance_recovery,
-                  recoveryDate: new Date(wageData.paid_date),
-                  wageId: updatedWage._id,
+                  recoveryDate: new Date(wageData.salary_month),
                   recoveryMethod: 'salary_deduction',
-                  remarks: `Recovered from salary for ${new Date(wageData.salary_month).toLocaleDateString()}`,
+                  status: newStatus === 'fully_recovered' ? 'completed' : 'pending',
+                  reason: `Salary deduction for ${new Date(wageData.salary_month).toLocaleDateString()}`,
+                  previousBalance: newAdvance.remainingBalance,
+                  newBalance: newBalance,
+                  wageId: updatedWage._id,
                   userId,
                   firmId
                 });
 
                 const savedRecovery = await recovery.save({ session });
 
-                // Update the wage record with the recovery ID
+                // Update wage with recovery ID
                 await Wage.findByIdAndUpdate(
                   updatedWage._id,
-                  {
-                    advance_recovery_id: savedRecovery._id
-                  },
+                  { advance_recovery_id: savedRecovery._id },
                   { session }
                 );
 
-                // Update the advance remaining balance
-                const newRemainingBalance = Math.max(0, newAdvance.remainingBalance - wageData.advance_recovery);
-                const newStatus = newRemainingBalance === 0 ? 'fully_recovered' : 'partially_recovered';
-
+                // Update advance balance
                 await EmployeeAdvance.findByIdAndUpdate(
                   wageData.selectedAdvanceId,
                   {
-                    remainingBalance: newRemainingBalance,
+                    remainingBalance: newBalance,
                     status: newStatus
                   },
-                  { new: true, session }
+                  { session }
                 );
 
                 advanceRecoveryCount++;

@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
           masterRollId: { $in: objectIds },
           firmId: new mongoose.Types.ObjectId(firmId),
           remainingBalance: { $gt: 0 },
-          status: { $in: ['approved', 'paid', 'partially_recovered'] }
+          status: { $in: ['pending', 'approved', 'partially_recovered'] }
         }
       },
       {

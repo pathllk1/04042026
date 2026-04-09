@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
       masterRollId: employeeId,
       firmId,
       remainingBalance: { $gt: 0 },
-      status: { $in: ['approved', 'paid', 'partially_recovered'] }
+      status: { $in: ['pending', 'approved', 'partially_recovered'] }
     }).sort({ date: 1 });
 
     return {

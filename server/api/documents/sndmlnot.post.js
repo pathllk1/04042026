@@ -165,7 +165,20 @@ export default defineEventHandler(async (event) => {
             </html>
           `
 
-          const config = useRuntimeConfig();
+    const config = useRuntimeConfig();
+
+    // Check if email configuration is available
+    if (!config.emailUser || !config.emailPass) {
+      console.warn('Email configuration not found. Skipping email notification.');
+      // Update lastmailsent even if email is not configured
+      user.lastmailsent = new Date();
+      await user.save();
+      return {
+        message: 'Notification processed (email service not configured)',
+        warning: 'Email notifications are not configured. Please contact administrator.'
+      };
+    }
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.mail.yahoo.com',
       port: 465,
@@ -178,9 +191,9 @@ export default defineEventHandler(async (event) => {
     });
 
     const mailOptions = {
-      from: 'paul.anjan3@yahoo.in',
+      from: config.emailUser || 'noreply@system.com',
       to: user.email,
-      subject: 'DOCUMENT EXPIRY',
+      subject: 'DOCUMENT EXPIRY NOTIFICATION',
       html: table
     };
 
@@ -199,7 +212,8 @@ export default defineEventHandler(async (event) => {
     });
 
     return {
-      message: 'Notifications sent successfully'
+      message: 'Notifications sent successfully',
+      emailsSent: 1
     };
   } catch (error) {
     console.error('Error in sending notifications:', error);

@@ -54,25 +54,25 @@
         </div>
 
         <!-- Paid from Bank AC (readonly) -->
-        <div class="w-full lg:w-40">
-          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Paid From Bank Account</label>
+        <div class="w-full lg:w-28">
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Paid From Bank AC</label>
           <UInput v-model="paymentDetails.paid_from_bank_ac" placeholder="Auto-filled" readonly class="w-full" />
         </div>
 
         <!-- Actions -->
-        <div class="w-full lg:w-auto">
+        <div class="w-full lg:w-auto lg:ml-auto">
           <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 invisible">Action</label>
-          <div class="flex gap-1 flex-wrap">
-            <UButton size="xs" color="primary" :disabled="!employeeWages.length || loading" @click="calculateAll">
+          <div class="flex gap-1 flex-wrap lg:flex-nowrap justify-start lg:justify-end items-center">
+            <UButton size="sm" color="primary" :disabled="!employeeWages.length || loading" @click="calculateAll">
               Calculate All
             </UButton>
-            <UButton size="xs" color="info" icon="i-lucide-eye" :disabled="!employeeWages.length || loading || selectedEmployeesCount === 0" title="Preview wages before saving" @click="showPreviewModal = true">
+            <UButton size="sm" color="info" icon="i-lucide-eye" :disabled="!employeeWages.length || loading || selectedEmployeesCount === 0" title="Preview wages before saving" @click="showPreviewModal = true">
               Preview
             </UButton>
-            <UButton size="xs" color="secondary" icon="i-lucide-file-text" :disabled="!selectedMonth || loading" title="Preview PF & ESIC for selected month" @click="showPfEsicPreviewModal = true">
+            <UButton size="sm" color="secondary" icon="i-lucide-file-text" :disabled="!selectedMonth || loading" title="Preview PF & ESIC for selected month" @click="showPfEsicPreviewModal = true">
               PF/ESIC
             </UButton>
-            <UButton size="xs" color="success" :loading="loading" :disabled="!employeeWages.length || loading" @click="saveWages">
+            <UButton size="sm" color="success" :loading="loading" :disabled="!employeeWages.length || loading" @click="saveWages">
               {{ loading ? 'Processing…' : 'Save Wages' }}
             </UButton>
           </div>
@@ -985,7 +985,23 @@ const applyAdvanceRecovery = (advance: any) => {
   const gross = Number(wage.pDayWage) * Number(wage.wage_Days)
   const calcs = calculateWithCurrentRules(gross)
   const netBefore = gross - (calcs.employeeEpf + calcs.employeeEsic + (Number(wage.other_deduction) || 0)) + (Number(wage.other_benefit) || 0)
-  wage.advance_recovery  = Math.min(advance.remainingBalance, Math.max(0, netBefore))
+  
+  // VALIDATION: Check if recovery amount is valid
+  const maxRecovery = Math.min(advance.remainingBalance, Math.max(0, netBefore))
+  
+  if (maxRecovery <= 0) {
+    notify('Cannot recover from this advance. Insufficient net salary.', 'error')
+    return
+  }
+  
+  // Check if this employee already has a recovery in current batch
+  const existingRecovery = wage.selectedAdvanceId
+  if (existingRecovery && existingRecovery !== advance._id) {
+    const confirmed = confirm(`This employee already has advance recovery selected. Do you want to change it?`)
+    if (!confirmed) return
+  }
+  
+  wage.advance_recovery  = maxRecovery
   wage.selectedAdvanceId = advance._id
   calculateWage(currentEmployeeIndex.value)
   closeAdvancesModal()
