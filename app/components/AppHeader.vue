@@ -17,14 +17,52 @@ const items = computed<NavigationMenuItem[]>(() => {
     return [
       ...commonItems,
       {
-        label: 'Master Roll',
-        to: '/wages/master_roll',
-        active: route.path === '/wages/master_roll'
-      },
-      {
-        label: 'Profile',
-        to: '/profile',
-        active: route.path === '/profile'
+        label: 'Wages',
+        icon: 'i-lucide-banknote',
+        children: [
+          {
+            label: 'Master Roll',
+            to: '/wages/master_roll',
+            icon: 'i-lucide-users',
+            description: 'Manage employee database and master roll',
+            active: route.path === '/wages/master_roll'
+          },
+          {
+            label: 'Dashboard',
+            to: '/wages/dashboard',
+            icon: 'i-lucide-layout-dashboard',
+            description: 'Overview of wages and statistics',
+            active: route.path === '/wages/dashboard'
+          },
+          {
+            label: 'Wages Management',
+            to: '/wages',
+            icon: 'i-lucide-hand-coins',
+            description: 'Process and manage monthly wages',
+            active: route.path === '/wages'
+          },
+          {
+            label: 'Edit Wages',
+            to: '/wages/edit',
+            icon: 'i-lucide-file-edit',
+            description: 'Modify existing wage records',
+            active: route.path === '/wages/edit'
+          },
+          {
+            label: 'Employee Advances',
+            to: '/wages/employee-advances',
+            icon: 'i-lucide-wallet',
+            description: 'Manage advances and recoveries',
+            active: route.path === '/wages/employee-advances'
+          },
+          {
+            label: 'Reports',
+            to: '/wages/report',
+            icon: 'i-lucide-file-text',
+            description: 'Generate wage and payment reports',
+            active: route.path === '/wages/report'
+          }
+        ]
       }
     ]
   }
@@ -32,7 +70,7 @@ const items = computed<NavigationMenuItem[]>(() => {
   return [
     ...commonItems,
     {
-      label: 'Auth',
+      label: 'Login',
       to: '/auth',
       active: route.path === '/auth'
     }

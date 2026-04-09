@@ -1,4 +1,4 @@
-import type { AIError } from '~/types/ai'
+import type { AIError } from '../types/ai'
 
 export class AIErrorHandler {
   static handleError(error: any, provider: string): AIError {

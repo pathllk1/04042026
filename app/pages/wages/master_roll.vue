@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-screen-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+  <div class="w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
 
     <!-- ── Page Header ─────────────────────────────────────────────── -->
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-3">
@@ -21,7 +21,7 @@
           Download Template
         </UButton>
 
-        <UButton color="teal" variant="solid" @click="downloadMasterRoll">
+        <UButton color="info" variant="solid" @click="downloadMasterRoll">
           <template #leading><ExcelIcon class="h-4 w-4" /></template>
           Download Master Roll
         </UButton>
@@ -32,7 +32,7 @@
 
         <!-- File upload — label wraps a presentational UButton span -->
         <label class="cursor-pointer">
-          <UButton as="span" color="indigo" variant="solid" class="pointer-events-none">
+          <UButton as="span" color="primary" variant="solid" class="pointer-events-none">
             <template #leading><ExcelIcon class="h-4 w-4" /></template>
             Upload Excel
           </UButton>
@@ -62,7 +62,7 @@
 
     <!-- ── Desktop Table ────────────────────────────────────────────── -->
     <div class="hidden md:block rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div class="h-[70vh] overflow-y-auto">
+      <div class="h-[65vh] overflow-y-auto">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 
           <!-- Sticky gradient header -->
@@ -148,11 +148,11 @@
 
           <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             <tr
-              v-for="(employee, index) in filteredEmployees"
+              v-for="(employee, index) in paginatedEmployees"
               :key="employee._id"
               class="hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
             >
-              <td class="px-3 py-3 text-center text-sm font-medium text-gray-500">{{ index + 1 }}</td>
+              <td class="px-3 py-3 text-center text-sm font-medium text-gray-500">{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ employee.employeeName }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.fatherHusbandName }}</td>
               <td
@@ -193,18 +193,61 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination Controls -->
+      <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-700 dark:text-gray-300">Rows per page:</span>
+            <USelect
+              v-model="pageSize"
+              :items="pageSizeOptions"
+              size="sm"
+              class="w-24"
+              @update:model-value="currentPage = 1"
+            />
+          </div>
+          <span class="text-sm text-gray-700 dark:text-gray-300">
+            Total: {{ filteredEmployees.length }} employees
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-gray-700 dark:text-gray-300">
+            Page {{ currentPage }} of {{ totalPages }}
+          </span>
+          <div class="flex items-center gap-1">
+            <UButton
+              icon="i-lucide-chevron-left"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :disabled="currentPage === 1"
+              @click="currentPage--"
+            />
+            <UButton
+              icon="i-lucide-chevron-right"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :disabled="currentPage === totalPages || totalPages === 0"
+              @click="currentPage++"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── Mobile Card View ─────────────────────────────────────────── -->
     <div class="md:hidden space-y-3">
       <div
-        v-for="(employee, index) in filteredEmployees"
+        v-for="(employee, index) in paginatedEmployees"
         :key="employee._id"
         class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
       >
         <div class="flex justify-between items-start mb-3">
           <div>
-            <UBadge color="teal" variant="soft" size="xs" class="mb-1">#{{ index + 1 }}</UBadge>
+            <UBadge color="info" variant="soft" size="xs" class="mb-1">#{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</UBadge>
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ employee.employeeName }}</h3>
           </div>
           <UButton size="xs" variant="ghost" icon="i-lucide-pencil" @click="editEmployee(employee)">
@@ -232,6 +275,27 @@
 
       <div v-if="filteredEmployees.length === 0" class="text-center text-gray-400 py-12 text-sm">
         No employees found.
+      </div>
+
+      <!-- Mobile Pagination -->
+      <div v-if="totalPages > 1" class="flex justify-center gap-4 py-4">
+        <UButton
+          icon="i-lucide-chevron-left"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        />
+        <span class="text-sm self-center">{{ currentPage }} / {{ totalPages }}</span>
+        <UButton
+          icon="i-lucide-chevron-right"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        />
       </div>
     </div>
 
@@ -377,7 +441,7 @@
             <transition name="slide-fade">
               <div v-if="showWageHistory" class="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Wage History</h3>
-                <EmployeeWageHistory
+                <WagesEmployeeWageHistory
                   :wage-history="wageHistory"
                   :loading="loadingWageHistory"
                   :employee-name="editingEmployee.employeeName"
@@ -402,7 +466,7 @@
               </UDropdownMenu>
 
               <UButton
-                color="violet"
+                color="secondary"
                 icon="i-lucide-chart-bar"
                 @click="toggleWageHistory"
               >
@@ -615,19 +679,18 @@
       </template>
     </UModal>
 
-    <!-- ── Child modals (props/events unchanged) ────────────────────── -->
-    <MasterRollExportModal
-      :show="showExportModal"
+    <!-- ── Child modals (Wages prefix for Nuxt 4 auto-import) ────────── -->
+    <WagesMasterRollExportModal
+      v-model:open="showExportModal"
       :employees="employees"
       :current-filters="columnFilters"
       :search-term="searchTerm"
       :unique-projects="uniqueProjects"
       :unique-sites="uniqueSites"
-      @close="showExportModal = false"
       @export-complete="handleExportComplete"
     />
 
-    <BulkEditModal
+    <WagesBulkEditModal
       :show="showBulkEditModal"
       :employees="filteredEmployees"
       :unique-categories="uniqueCategories"
@@ -645,7 +708,6 @@
 import ExcelIcon from '~/components/icons/ExcelIcon.vue'
 import useApiWithAuth from '~/composables/auth/useApiWithAuth'
 import { usePageTitle } from '~/composables/ui/usePageTitle'
-// EmployeeWageHistory, MasterRollExportModal, BulkEditModal → auto-imported from ~/components/
 
 // ─── Page meta + composables ──────────────────────────────────────────────────
 definePageMeta({
@@ -754,6 +816,17 @@ const emptyFilters = (): Record<FilterKey, string[]> => ({
 const columnFilters = ref<Record<FilterKey, string[]>>(emptyFilters())
 const filterOptions = ref<Record<FilterKey, string[]>>(emptyFilters())
 
+// Pagination
+const currentPage = ref(1)
+const pageSize = ref('50')
+const pageSizeOptions = [
+  { label: '10', value: '10' },
+  { label: '20', value: '20' },
+  { label: '50', value: '50' },
+  { label: '100', value: '100' },
+  { label: 'All', value: 'all' }
+]
+
 // IFSC auto-fill
 const fetchingBankDetails = ref(false)
 const ifscError  = ref('')
@@ -828,6 +901,18 @@ const filteredEmployees = computed(() => {
   })
 })
 
+const totalPages = computed(() => {
+  if (pageSize.value === 'all') return 1
+  return Math.ceil(filteredEmployees.value.length / Number(pageSize.value))
+})
+
+const paginatedEmployees = computed(() => {
+  if (pageSize.value === 'all') return filteredEmployees.value
+  const size = Number(pageSize.value)
+  const start = (currentPage.value - 1) * size
+  return filteredEmployees.value.slice(start, start + size)
+})
+
 const uniqueBanks      = computed(() => [...new Set(employees.value.map(e => e.bank).filter(Boolean))].sort())
 const uniqueCategories = computed(() => [...new Set(employees.value.map(e => e.category).filter(Boolean))].sort())
 const uniqueProjects   = computed(() => [...new Set(employees.value.map(e => e.project).filter(Boolean))].sort())
@@ -897,17 +982,25 @@ const toggleSort = (field: string) => {
     sortField.value = field
     sortDirection.value = 'asc'
   }
+  currentPage.value = 1 // Reset to first page on sort
 }
 
 const applyFilter = (column: FilterKey, value: string) => {
   const idx = columnFilters.value[column].indexOf(value)
   if (idx > -1) columnFilters.value[column].splice(idx, 1)
   else columnFilters.value[column].push(value)
+  currentPage.value = 1 // Reset to first page on filter
 }
 
-const clearColumnFilter = (column: FilterKey) => { columnFilters.value[column] = [] }
+const clearColumnFilter = (column: FilterKey) => { 
+  columnFilters.value[column] = [] 
+  currentPage.value = 1
+}
 
-const resetAllFilters = () => { columnFilters.value = emptyFilters() }
+const resetAllFilters = () => { 
+  columnFilters.value = emptyFilters() 
+  currentPage.value = 1
+}
 
 const updateFilterOptions = () => {
   const u: Record<FilterKey, string[]> = {
@@ -932,6 +1025,11 @@ const updateFilterOptions = () => {
   }
   filterOptions.value = u
 }
+
+// Watch searchTerm to reset pagination
+watch(searchTerm, () => {
+  currentPage.value = 1
+})
 
 // ─── API functions ────────────────────────────────────────────────────────────
 const fetchEmployees = async () => {

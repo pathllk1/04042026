@@ -20,7 +20,7 @@ definePageMeta({
       <template #header>
         <div class="flex items-center justify-between">
           <h1 class="text-2xl font-bold">User Profile</h1>
-          <UButton color="red" variant="soft" icon="i-lucide-log-out" @click="logout">
+          <UButton color="error" variant="soft" icon="i-lucide-log-out" @click="logout">
             Logout
           </UButton>
         </div>

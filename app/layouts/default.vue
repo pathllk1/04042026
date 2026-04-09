@@ -1,11 +1,297 @@
+<script setup>
+import { ref } from 'vue'
+
+const isMobileMenuOpen = ref(false)
+const isSidebarCollapsed = ref(true)
+const isWagesDropdownOpen = ref(false)
+
+const { user, isLoggedIn, logout } = useAuth()
+const route = useRoute()
+
+const navigation = [
+  { label: 'Home', to: '/', icon: 'i-heroicons-home' }
+]
+
+const wagesMenuItems = [
+  { label: 'Master Roll', to: '/wages/master_roll', icon: 'i-lucide-users', description: 'Manage employee database and master roll' },
+  { label: 'Dashboard', to: '/wages/dashboard', icon: 'i-lucide-layout-dashboard', description: 'Overview of wages and statistics' },
+  { label: 'Wages Management', to: '/wages', icon: 'i-lucide-hand-coins', description: 'Process and manage monthly wages' },
+  { label: 'Edit Wages', to: '/wages/edit', icon: 'i-lucide-file-edit', description: 'Modify existing wage records' },
+  { label: 'Employee Advances', to: '/wages/employee-advances', icon: 'i-lucide-wallet', description: 'Manage advances and recoveries' },
+  { label: 'Reports', to: '/wages/report', icon: 'i-lucide-file-text', description: 'Generate wage and payment reports' }
+]
+</script>
+
 <template>
-  <div class="min-h-screen flex flex-col">
-    <AppHeader />
+  <UApp class="min-h-screen flex flex-col relative">
+    <!-- HEADER -->
+    <UHeader 
+      class="h-16 sticky top-0 z-50 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur"
+    >
+      <template #left>
+        <UButton
+          icon="i-heroicons-bars-3"
+          color="neutral"
+          variant="ghost"
+          class="mr-2 md:hidden"
+          @click="isMobileMenuOpen = true"
+        />
 
-    <main class="flex-1 px-4 py-6">
-      <slot />
-    </main>
+        <NuxtLink to="/" class="flex items-center gap-2">
+          <AppLogo class="w-auto h-6 shrink-0" />
+        </NuxtLink>
 
-    <AppFooter />
-  </div>
+        <div class="hidden md:flex items-center gap-4 ml-6">
+          <TemplateMenu />
+          <nav class="flex items-center space-x-4">
+            <NuxtLink 
+              v-for="item in navigation" 
+              :key="item.to"
+              :to="item.to" 
+              class="text-sm font-medium hover:text-primary transition-colors"
+            >
+              {{ item.label }}
+            </NuxtLink>
+            <UDropdownMenu
+              v-if="isLoggedIn"
+              v-slot="{ open }"
+              :modal="false"
+              :items="wagesMenuItems.map(item => ({
+                label: item.label,
+                to: item.to,
+                icon: item.icon,
+                description: item.description
+              }))"
+              :content="{ align: 'start' }"
+              :ui="{ content: 'min-w-fit' }"
+              size="xs"
+            >
+              <UButton
+                label="Wages"
+                variant="subtle"
+                trailing-icon="i-lucide-chevron-down"
+                size="xs"
+                class="-mb-[6px] font-semibold rounded-full truncate"
+                :class="[open && 'bg-primary/15']"
+                :ui="{
+                  trailingIcon: ['transition-transform duration-200', open ? 'rotate-180' : undefined].filter(Boolean).join(' ')
+                }"
+              />
+            </UDropdownMenu>
+          </nav>
+        </div>
+      </template>
+
+      <template #right>
+        <UColorModeButton />
+        
+        <template v-if="isLoggedIn && user">
+          <UDropdownMenu
+            :items="[
+              [
+                { label: user.fullname, slot: 'account', disabled: true },
+                { label: 'Profile', to: '/profile', icon: 'i-lucide-user' }
+              ],
+              [
+                { label: 'Logout', icon: 'i-lucide-log-out', color: 'error', onSelect: logout }
+              ]
+            ]"
+          >
+            <UAvatar
+              :alt="user.fullname"
+              size="sm"
+              class="cursor-pointer"
+            />
+          </UDropdownMenu>
+        </template>
+        <template v-else>
+          <UButton to="/auth" color="primary" variant="solid" size="sm">
+            Login
+          </UButton>
+        </template>
+
+        <UButton
+          to="https://github.com/nuxt-ui-templates/starter"
+          target="_blank"
+          icon="i-simple-icons-github"
+          color="neutral"
+          variant="ghost"
+        />
+      </template>
+    </UHeader>
+
+    <!-- MAIN BODY -->
+    <div class="flex flex-1 relative">
+      <!-- DESKTOP SIDEBAR -->
+      <aside
+        :class="[
+          'hidden md:flex flex-col fixed top-16 left-0 h-[calc(100vh-4rem-3rem)] border-r bg-white/50 dark:bg-gray-900/50 backdrop-blur transition-all duration-300 z-40',
+          isSidebarCollapsed ? 'w-16' : 'w-64'
+        ]"
+      >
+        <div class="flex-1 overflow-y-auto p-3">
+          <nav class="flex flex-col space-y-1">
+            <UTooltip 
+              v-for="item in navigation" 
+              :key="item.to"
+              :text="item.label"
+              :side="isSidebarCollapsed ? 'right' : undefined"
+            >
+              <NuxtLink 
+                :to="item.to" 
+                class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                active-class="bg-gray-100 dark:bg-gray-800 text-primary"
+              >
+                <UIcon :name="item.icon" class="text-xl shrink-0" />
+                <span v-if="!isSidebarCollapsed" class="text-sm font-medium truncate">{{ item.label }}</span>
+              </NuxtLink>
+            </UTooltip>
+            
+            <!-- Wages Dropdown Section -->
+            <template v-if="isLoggedIn">
+              <UTooltip 
+                text="Wages"
+                :side="isSidebarCollapsed ? 'right' : undefined"
+              >
+                <button
+                  @click="isWagesDropdownOpen = !isWagesDropdownOpen"
+                  class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-full text-left group"
+                  :class="[isWagesDropdownOpen && 'bg-gray-100 dark:bg-gray-800']"
+                >
+                  <UIcon name="i-lucide-banknote" class="text-xl shrink-0" />
+                  <span v-if="!isSidebarCollapsed" class="text-sm font-medium truncate flex-1">Wages</span>
+                  <UIcon 
+                    v-if="!isSidebarCollapsed"
+                    name="i-lucide-chevron-down" 
+                    class="text-sm shrink-0 transition-transform"
+                    :class="[isWagesDropdownOpen && 'rotate-180']"
+                  />
+                </button>
+              </UTooltip>
+              
+              <!-- Wages Items -->
+              <template v-if="isWagesDropdownOpen">
+                <UTooltip 
+                  v-for="item in wagesMenuItems" 
+                  :key="item.to"
+                  :text="item.label"
+                  :side="isSidebarCollapsed ? 'right' : undefined"
+                >
+                  <NuxtLink 
+                    :to="item.to" 
+                    class="flex items-center gap-3 px-6 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group text-sm"
+                    active-class="bg-gray-100 dark:bg-gray-800 text-primary font-medium"
+                  >
+                    <UIcon :name="item.icon" class="text-lg shrink-0" />
+                    <span v-if="!isSidebarCollapsed" class="font-medium truncate">{{ item.label }}</span>
+                  </NuxtLink>
+                </UTooltip>
+              </template>
+            </template>
+          </nav>
+        </div>
+
+        <!-- COLLAPSE TOGGLE -->
+        <div class="p-3 border-t">
+          <UButton
+            :icon="isSidebarCollapsed ? 'i-heroicons-chevron-double-right' : 'i-heroicons-chevron-double-left'"
+            color="neutral"
+            variant="ghost"
+            block
+            @click="isSidebarCollapsed = !isSidebarCollapsed"
+          />
+        </div>
+      </aside>
+
+      <!-- CONTENT AREA -->
+      <main
+        :class="[
+          'flex-1 transition-all duration-300 min-w-0 pb-12',
+          isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+        ]"
+      >
+        <UMain class="p-4 md:p-8">
+          <slot />
+        </UMain>
+      </main>
+    </div>
+
+    <!-- MOBILE SIDEBAR / MENU -->
+    <USlideover v-model:open="isMobileMenuOpen" title="Menu" side="left">
+      <template #body>
+        <div class="flex flex-col space-y-4 p-4">
+          <div class="flex items-center gap-2 pb-4 border-b">
+            <AppLogo class="w-auto h-6" />
+            <span class="font-bold">Starter</span>
+          </div>
+          
+          <nav class="flex flex-col space-y-2">
+            <NuxtLink 
+              v-for="item in navigation" 
+              :key="item.to"
+              :to="item.to" 
+              class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              active-class="bg-gray-100 dark:bg-gray-800 text-primary font-semibold"
+              @click="isMobileMenuOpen = false"
+            >
+              <UIcon :name="item.icon" class="text-xl" />
+              <span>{{ item.label }}</span>
+            </NuxtLink>
+            
+            <!-- Wages Section -->
+            <template v-if="isLoggedIn">
+              <div class="pt-2 mt-2 border-t">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-4 py-2 uppercase">Wages</p>
+              </div>
+              <NuxtLink 
+                v-for="item in wagesMenuItems" 
+                :key="item.to"
+                :to="item.to" 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                active-class="bg-gray-100 dark:bg-gray-800 text-primary font-semibold"
+                @click="isMobileMenuOpen = false"
+              >
+                <UIcon :name="item.icon" class="text-xl" />
+                <span>{{ item.label }}</span>
+              </NuxtLink>
+            </template>
+          </nav>
+
+          <div class="pt-4 border-t">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Templates</p>
+            <TemplateMenu />
+          </div>
+        </div>
+      </template>
+    </USlideover>
+
+    <!-- FIXED FOOTER -->
+    <footer 
+      class="fixed bottom-0 left-0 right-0 h-12 border-t bg-white/80 dark:bg-gray-900/80 backdrop-blur z-50 flex items-center px-4 md:px-6"
+    >
+      <div class="flex flex-1 items-center justify-between">
+        <div class="flex items-center gap-4">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            © {{ new Date().getFullYear() }} Nuxt Starter
+          </p>
+          <USeparator orientation="vertical" class="h-4" />
+          <div class="hidden sm:flex items-center gap-3">
+            <NuxtLink to="/" class="text-xs hover:text-primary">Privacy</NuxtLink>
+            <NuxtLink to="/" class="text-xs hover:text-primary">Terms</NuxtLink>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <UButton
+            to="https://github.com/nuxt-ui-templates/starter"
+            target="_blank"
+            icon="i-simple-icons-github"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+          />
+        </div>
+      </div>
+    </footer>
+  </UApp>
 </template>

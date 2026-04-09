@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import type { AIConfiguration, AIRequest, AIResponse, AIError, CustomAIProvider } from '~/types/ai'
+import type { AIConfiguration, AIRequest, AIResponse, AIError, CustomAIProvider } from '../types/ai'
 import { AIErrorHandler } from './aiErrorHandler'
 import { getServerProviderHandler } from './aiProviderRegistry'
 import { useRuntimeConfig } from '#imports'

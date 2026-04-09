@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import type { AIConfiguration, AIRequest, AIResponse, CustomAIProvider } from '~/types/ai'
+import type { AIConfiguration, AIRequest, AIResponse, CustomAIProvider } from '../types/ai'
 
 /**
  * Server-side Dynamic AI Provider Registry
