@@ -44,21 +44,21 @@
               
               <!-- AI Rules Card (Left) -->
               <div class="lg:col-span-7 space-y-4">
-                <div v-if="!isConfigured" class="bg-amber-50 dark:bg-amber-900/20 border-2 border-dashed border-amber-200 dark:border-amber-800 rounded-xl p-5">
+                <div v-if="!isConfigured" class="bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-5">
                   <div class="flex items-start gap-4">
-                    <div class="bg-amber-500 text-white p-2 rounded-lg shrink-0">
-                      <UIcon name="i-lucide-bot" class="h-6 w-6" />
+                    <div class="bg-green-500 text-white p-2 rounded-lg shrink-0">
+                      <UIcon name="i-lucide-shield-check" class="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 class="text-sm font-black text-amber-900 dark:text-amber-300 uppercase tracking-widest mb-1">AI Engine Required</h3>
-                      <p class="text-xs text-amber-700 dark:text-amber-400 font-medium leading-relaxed mb-4">
-                        Enable AI-powered government rule synchronization to automatically fetch the latest EPF/ESIC statutory rates and contribution ceilings.
+                      <h3 class="text-sm font-black text-green-900 dark:text-green-300 uppercase tracking-widest mb-1">Fallback Statutory Rates Active</h3>
+                      <p class="text-xs text-green-700 dark:text-green-400 font-medium leading-relaxed mb-4">
+                        AI engine not configured. Using standard statutory rates (EPF: 12% max ₹1800, ESIC: 0.75%). Configure AI to fetch latest government rates.
                       </p>
                       <UButton
-                        color="warning"
+                        color="success"
                         size="xs"
                         icon="i-lucide-settings"
-                        label="Configure AI Engine"
+                        label="Configure AI Engine (Optional)"
                         @click="openAISettings"
                       />
                     </div>
