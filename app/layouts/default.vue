@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue'
+import GlobalSettingsPopup from '~/components/tools/GlobalSettingsPopup.vue'
 
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(true)
 const isWagesDropdownOpen = ref(false)
+const showSettingsModal = ref(false)
 
 const { user, isLoggedIn, logout } = useAuth()
 const route = useRoute()
@@ -95,6 +97,15 @@ const wagesMenuItems = [
 
       <template #right>
         <UColorModeButton />
+        
+        <UButton
+          icon="i-lucide-settings"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          title="Settings"
+          @click="showSettingsModal = true"
+        />
         
         <template v-if="isLoggedIn && user">
           <UDropdownMenu
@@ -338,4 +349,9 @@ const wagesMenuItems = [
       </div>
     </footer>
   </UApp>
+
+  <!-- Global Settings Modal -->
+  <GlobalSettingsPopup 
+    v-model:isOpen="showSettingsModal"
+  />
 </template>

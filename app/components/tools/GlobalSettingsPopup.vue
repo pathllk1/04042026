@@ -1145,20 +1145,38 @@
 </template>
 
 <script setup>
-// Nuxt v4 handles auto-imports for Vue (ref, computed, onMounted, etc.) and Nuxt (useRouter, useCookie, nextTick, etc.)
+// Nuxt v4 handles auto-imports for Vue, Nuxt, and project components/composables
 import { showAccessDenied } from '~~/utils/accessDenied';
+import { AI_PROVIDERS } from '~/types/ai';
+
+// Explicitly import components as they are not being auto-resolved correctly
 import NotesTab from '~/components/tools/NotesTab.vue';
 import AIUsageMonitor from '~/components/tools/AIUsageMonitor.vue';
 import CustomProviderManager from '~/components/tools/CustomProviderManager.vue';
-import { AI_PROVIDERS } from '~/types/ai';
 
-// Composables in app/composables are auto-imported in Nuxt v4
-// import useUserRole from '~/composables/auth/useUserRole';
-// import { useAIConfig } from '~/composables/ai/useAIConfig';
-// import { useUserDataManager } from '~/composables/utils/useUserDataManager';
+// Explicitly import composables from subdirectories as they are not auto-imported by default
+import useUserRole from '~/composables/auth/useUserRole';
+import { useAIConfig } from '~/composables/ai/useAIConfig';
+import { useUserDataManager } from '~/composables/utils/useUserDataManager';
+
+// Props for v-model binding
+const props = defineProps({
+  isOpen: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update:isOpen']);
+
+// Composables like useUserRole, useAIConfig, useUserDataManager are auto-imported in Nuxt v4
+// if they are in the app/composables directory.
 
 const router = useRouter();
-const isOpen = ref(false);
+const isOpen = computed({
+  get: () => props.isOpen,
+  set: (value) => emit('update:isOpen', value)
+});
 const activeTab = ref('tools');
 
 // Authentication state

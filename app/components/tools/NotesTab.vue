@@ -77,7 +77,7 @@
 import { ref, onMounted } from 'vue';
 import { useNotes } from '~/composables/business/useNotes';
 import type { Note } from '~/server/models/Note';
-import NoteContent from '~/components/NoteContent.vue';
+import NoteContent from './NoteContent.vue';
 
 // State
 const showNoteModal = ref(false);
