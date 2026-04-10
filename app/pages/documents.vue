@@ -2,20 +2,21 @@
   <div class="container mx-auto px-4 py-4 pb-12">
 
     <!-- ── Hero Section ────────────────────────────────────────────── -->
-    <div class="mb-8 py-4">
-      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Document Management</h1>
-      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage your important documents and track their validity</p>
+    <div class="mb-4 py-2">
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Document Management</h1>
+      <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Manage your important documents and track their validity</p>
     </div>
 
     <!-- ── Document Management Interface ──────────────────────────── -->
-    <UCard class="mb-8">
+    <UCard class="mb-4">
       <!-- Header row: title + action buttons -->
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Your Documents</h2>
-        <div class="flex gap-3 flex-wrap">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-slate-800 dark:text-white">Your Documents</h2>
+        <div class="flex gap-2 flex-wrap">
           <UButton
             color="primary"
             icon="i-lucide-bell"
+            size="sm"
             @click="triggerNotifications"
           >
             Send Notifications
@@ -24,6 +25,7 @@
           <UButton
             color="success"
             icon="i-lucide-plus"
+            size="sm"
             @click="showAddDocumentModal = true"
           >
             Add Document
@@ -32,6 +34,7 @@
           <UButton
             color="warning"
             icon="i-lucide-download"
+            size="sm"
             @click="downloadDocuments"
           >
             Download
@@ -58,7 +61,7 @@
       </div>
 
       <!-- Search Controls — always visible -->
-      <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-3 md:space-y-0 gap-3">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-3 space-y-2 md:space-y-0 gap-2">
         <!-- Search input — ref kept for focus-restore after fetch -->
         <div class="w-full md:w-64">
           <UInput
@@ -154,30 +157,30 @@
         <div class="overflow-x-auto -mx-4 sm:-mx-0">
           <div class="inline-block min-w-full py-2 px-4 sm:px-0 align-middle">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-800">
+              <thead class="bg-gradient-to-r from-green-600 via-purple-600 to-red-600">
                 <tr>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                     Document Name
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
                     Reference Number
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider hidden md:table-cell">
                     Description
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
                     Start Date
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                     Expiry Date
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider hidden md:table-cell">
                     Value
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                     Status
                   </th>
-                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" class="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs font-bold text-white uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -303,247 +306,208 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <UModal
       v-model:open="showDocumentModal"
-      :ui="{ content: 'sm:max-w-6xl' }"
+      :ui="{ content: 'max-w-5xl' }"
     >
       <template #content>
         <UCard :ui="{ header: 'p-0 border-0', body: 'p-0', footer: 'p-0 border-0' }">
 
-          <!-- Modal Header -->
+          <!-- Modal Header - Enterprise Grade -->
           <template #header>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-green-400 via-blue-500 to-green-400 text-white flex justify-between items-center rounded-t-xl">
-              <h3 class="text-base sm:text-lg font-medium">
-                {{ showEditDocumentModal ? 'Edit Document' : 'Add New Document' }}
-              </h3>
+            <div class="px-6 py-4 bg-gradient-to-r from-green-600 via-emerald-500 to-purple-600 text-white flex justify-between items-center rounded-t-lg shadow-lg">
+              <div>
+                <h3 class="text-lg font-bold">
+                  {{ showEditDocumentModal ? '✎ Edit Document' : '➕ Add New Document' }}
+                </h3>
+                <p class="text-xs text-green-100 mt-1">{{ showEditDocumentModal ? 'Update document details and information' : 'Create a new document record' }}</p>
+              </div>
               <UButton
                 icon="i-lucide-x"
                 variant="ghost"
-                color="neutral"
-                size="sm"
-                class="text-white hover:bg-white/10"
+                color="white"
+                size="md"
+                class="text-white hover:bg-white/20"
                 @click="cancelDocumentForm"
               />
             </div>
           </template>
 
           <!-- Modal Body / Form -->
-          <div class="px-4 sm:px-6 py-4 overflow-y-auto max-h-[75vh]">
+          <div class="px-6 py-6 overflow-y-auto max-h-[70vh] bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
 
-            <!-- Document Name -->
-            <div class="mb-4">
-              <UFormField label="Document Name" required>
-                <UInput
-                  id="documentName"
-                  v-model="documentForm.name"
-                  type="text"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
+            <!-- Section 1: Basic Information -->
+            <div class="mb-8">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="w-1 h-5 bg-green-600 rounded"></span>
+                Basic Information
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormField label="Document Name" required>
+                  <UInput
+                    v-model="documentForm.name"
+                    type="text"
+                    placeholder="Enter document name"
+                    class="w-full"
+                  />
+                </UFormField>
 
-            <!-- Reference Number -->
-            <div class="mb-4">
-              <UFormField label="Reference Number" required>
-                <UInput
-                  id="ref_no"
-                  v-model="documentForm.ref_no"
-                  type="text"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
+                <UFormField label="Reference Number" required>
+                  <UInput
+                    v-model="documentForm.ref_no"
+                    type="text"
+                    placeholder="Enter reference number"
+                    class="w-full"
+                  />
+                </UFormField>
+              </div>
 
-            <!-- Description -->
-            <div class="mb-4">
-              <UFormField label="Description" required>
+              <UFormField label="Description" required class="mt-4">
                 <UTextarea
-                  id="description"
                   v-model="documentForm.description"
                   :rows="3"
+                  placeholder="Enter detailed description"
                   class="w-full"
                 />
               </UFormField>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
-              <!-- Left column: Start Date + Closed Date -->
-              <div>
-                <!-- Start Date -->
-                <div class="mb-4">
-                  <UFormField label="Start Date">
-                    <UInput
-                      id="startDate"
-                      v-model="documentForm.startDate"
-                      type="date"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
+            <!-- Section 2: Dates -->
+            <div class="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="w-1 h-5 bg-emerald-600 rounded"></span>
+                Date Information
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormField label="Start Date">
+                  <UInput
+                    v-model="documentForm.startDate"
+                    type="date"
+                    class="w-full"
+                  />
+                </UFormField>
 
-                <!-- Closed Date -->
-                <div class="mb-4">
-                  <UFormField label="Closed Date">
-                    <UInput
-                      id="closedDate"
-                      v-model="documentForm.closedDate"
-                      type="date"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
-              </div>
+                <UFormField label="Closed Date">
+                  <UInput
+                    v-model="documentForm.closedDate"
+                    type="date"
+                    class="w-full"
+                  />
+                </UFormField>
 
-              <!-- Right column: Original Expiry Date + Extended Expiry Date -->
-              <div>
-                <!-- Original Expiry Date -->
-                <div class="mb-4">
-                  <UFormField label="Original Expiry Date" required>
-                    <UInput
-                      id="oExpiryDate"
-                      v-model="documentForm.oExpiryDate"
-                      type="date"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
+                <UFormField label="Original Expiry Date" required>
+                  <UInput
+                    v-model="documentForm.oExpiryDate"
+                    type="date"
+                    class="w-full"
+                  />
+                </UFormField>
 
-                <!-- Extended Expiry Date -->
-                <div class="mb-4">
-                  <UFormField label="Extended Expiry Date" required>
-                    <UInput
-                      id="expiryDate"
-                      v-model="documentForm.expiryDate"
-                      type="date"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
+                <UFormField label="Extended Expiry Date" required>
+                  <UInput
+                    v-model="documentForm.expiryDate"
+                    type="date"
+                    class="w-full"
+                  />
+                </UFormField>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
-              <!-- Value -->
-              <div>
-                <div class="mb-4">
-                  <UFormField label="Value" required>
-                    <UInput
-                      id="value"
-                      v-model="documentForm.value"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
-              </div>
+            <!-- Section 3: Financial & Status -->
+            <div class="mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="w-1 h-5 bg-purple-600 rounded"></span>
+                Financial & Status
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormField label="Value" required>
+                  <UInput
+                    v-model="documentForm.value"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Enter value"
+                    class="w-full"
+                  />
+                </UFormField>
 
-              <!-- Status -->
-              <div>
-                <div class="mb-4">
-                  <UFormField label="Status">
-                    <USelect
-                      id="status"
-                      v-model="documentForm.status"
-                      :items="documentStatusItems"
-                      placeholder="Select status"
-                      class="w-full"
-                    />
-                  </UFormField>
-                </div>
+                <UFormField label="Status">
+                  <USelect
+                    v-model="documentForm.status"
+                    :items="documentStatusItems"
+                    placeholder="Select status"
+                    class="w-full"
+                  />
+                </UFormField>
               </div>
             </div>
 
-            <!-- File Upload -->
-            <div class="mb-4">
-              <UFormField label="File Upload">
-                <!-- Native file input hidden, triggered by UButton -->
-                <input
-                  id="fileUpload"
-                  type="file"
-                  ref="fileInput"
-                  class="sr-only"
-                  @change="handleFileUpload"
-                />
-                <UButton
-                  variant="outline"
-                  color="neutral"
-                  icon="i-lucide-upload"
-                  type="button"
-                  @click="fileInput?.click()"
-                >
-                  Choose File
-                </UButton>
-              </UFormField>
+            <!-- Section 4: File Management -->
+            <div>
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <span class="w-1 h-5 bg-orange-600 rounded"></span>
+                File Management
+              </h4>
+              <input
+                type="file"
+                ref="fileInput"
+                class="sr-only"
+                @change="handleFileUpload"
+              />
+              <UButton
+                variant="outline"
+                color="neutral"
+                icon="i-lucide-upload"
+                class="w-full"
+                @click="fileInput?.click()"
+              >
+                Choose File
+              </UButton>
 
-              <!-- Current File Information (edit mode) -->
+              <!-- Current File Information -->
               <div
                 v-if="documentForm.file"
-                class="mt-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800"
+                class="mt-4 p-4 border-l-4 border-green-500 bg-green-50 dark:bg-green-900/20 rounded"
               >
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Current File</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate max-w-xs">
-                      File ID: {{ documentForm.fileId || 'Not available' }}
-                    </p>
-                  </div>
-                  <div class="flex gap-2">
-                    <UButton
-                      :to="documentForm.file"
-                      target="_blank"
-                      external
-                      variant="soft"
-                      color="success"
-                      icon="i-lucide-eye"
-                      size="xs"
-                    >
-                      View
-                    </UButton>
-                  </div>
-                </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Uploading a new file will replace the current one.
-                </p>
+                <p class="text-xs font-bold text-green-900 dark:text-green-200 uppercase tracking-wide">Current File</p>
+                <p class="text-sm text-green-700 dark:text-green-300 mt-1 font-mono">{{ documentForm.fileId || 'Not available' }}</p>
               </div>
 
-              <!-- Selected File Information (new file chosen) -->
+              <!-- Selected File Information -->
               <div
                 v-if="selectedFile"
-                class="mt-3 p-3 border border-green-200 dark:border-green-700 rounded-md bg-green-50 dark:bg-green-900/20"
+                class="mt-4 p-4 border-l-4 border-purple-500 bg-purple-50 dark:bg-purple-900/20 rounded"
               >
-                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">New File Selected</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})
-                </p>
+                <p class="text-xs font-bold text-purple-900 dark:text-purple-200 uppercase tracking-wide">✓ New File Selected</p>
+                <p class="text-sm text-purple-700 dark:text-purple-300 mt-1">{{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})</p>
               </div>
             </div>
 
           </div>
 
-          <!-- Modal Footer -->
+          <!-- Modal Footer - Enterprise Grade -->
           <template #footer>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-green-400 via-blue-500 to-green-400 flex justify-end gap-3 rounded-b-xl">
-              <UButton
-                type="button"
-                color="warning"
-                variant="solid"
-                class="bg-gradient-to-r from-orange-400 to-red-500 hover:opacity-90 border-0"
-                @click="cancelDocumentForm"
-              >
-                Cancel
-              </UButton>
+            <div class="px-6 py-4 bg-gradient-to-r from-green-100 to-purple-100 dark:from-green-900/20 dark:to-purple-900/20 flex justify-between items-center rounded-b-lg border-t border-gray-200 dark:border-gray-700">
+              <p class="text-xs text-gray-600 dark:text-gray-400">All fields marked with * are required</p>
+              <div class="flex gap-3">
+                <UButton
+                  type="button"
+                  color="gray"
+                  variant="outline"
+                  @click="cancelDocumentForm"
+                >
+                  Cancel
+                </UButton>
 
-              <UButton
-                type="button"
-                color="primary"
-                variant="solid"
-                :loading="isSubmitting"
-                :disabled="isSubmitting"
-                class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 border-0 min-w-[80px]"
-                @click="showEditDocumentModal ? updateDocument() : addDocument()"
-              >
-                {{ showEditDocumentModal ? 'Update' : 'Add' }}
-              </UButton>
+                <UButton
+                  type="button"
+                  color="primary"
+                  :loading="isSubmitting"
+                  :disabled="isSubmitting"
+                  class="bg-gradient-to-r from-green-600 to-purple-600 hover:from-green-700 hover:to-purple-700"
+                  @click="showEditDocumentModal ? updateDocument() : addDocument()"
+                >
+                  {{ showEditDocumentModal ? '💾 Update Document' : '➕ Add Document' }}
+                </UButton>
+              </div>
             </div>
           </template>
 
@@ -554,27 +518,28 @@
     <!-- ══════════════════════════════════════════════════════════════ -->
     <!-- DELETE CONFIRMATION MODAL                                      -->
     <!-- ══════════════════════════════════════════════════════════════ -->
-    <UModal v-model:open="showDeleteModal" :ui="{ content: 'sm:max-w-md' }">
+    <UModal v-model:open="showDeleteModal" :ui="{ content: 'max-w-2xl' }">
       <template #content>
-        <UCard :ui="{ header: 'p-0 border-0', footer: 'p-0 border-0' }">
+        <UCard :ui="{ header: 'p-0 border-0', body: 'p-0', footer: 'p-0 border-0' }">
 
           <!-- Header -->
           <template #header>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Confirm Deletion</h3>
+            <div class="px-6 py-4 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 text-white flex items-center gap-3 rounded-t-lg">
+              <UIcon name="i-lucide-alert-triangle" class="w-6 h-6" />
+              <h3 class="text-lg font-bold">Confirm Deletion</h3>
             </div>
           </template>
 
           <!-- Body -->
-          <div class="px-4 sm:px-6 py-3 sm:py-4">
-            <p class="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-              Are you sure you want to delete this document? This action cannot be undone.
+          <div class="px-6 py-6 bg-gradient-to-b from-red-50 to-white dark:from-red-900/10 dark:to-gray-800">
+            <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              <span class="font-semibold text-red-600 dark:text-red-400">⚠️ Warning:</span> You are about to permanently delete this document. This action cannot be undone and all associated data will be lost.
             </p>
           </div>
 
           <!-- Footer -->
           <template #footer>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 flex justify-end gap-3 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
               <UButton
                 variant="outline"
                 color="neutral"
@@ -584,9 +549,10 @@
               </UButton>
               <UButton
                 color="error"
+                class="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
                 @click="deleteDocument"
               >
-                Delete
+                🗑️ Delete Permanently
               </UButton>
             </div>
           </template>
