@@ -2,16 +2,9 @@
   <div class="container mx-auto px-4 py-4 pb-12">
 
     <!-- ── Hero Section ────────────────────────────────────────────── -->
-    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 py-12 px-6 rounded-2xl shadow-xl mb-12 relative overflow-hidden">
-      <div class="absolute inset-0 bg-pattern opacity-10"></div>
-      <div class="max-w-3xl mx-auto text-center relative z-10">
-        <h1 class="text-4xl font-extrabold text-white sm:text-5xl tracking-tight">
-          Document Management
-        </h1>
-        <p class="mt-4 text-xl text-teal-50 max-w-2xl mx-auto">
-          Manage your important documents and track their validity
-        </p>
-      </div>
+    <div class="mb-8 py-4">
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Document Management</h1>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Manage your important documents and track their validity</p>
     </div>
 
     <!-- ── Document Management Interface ──────────────────────────── -->
@@ -277,17 +270,11 @@
         </div>
 
         <!-- ── Pagination Controls ─────────────────────────────────── -->
-        <div class="flex flex-col sm:flex-row justify-between items-center mt-4 gap-3">
-          <div class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 order-2 sm:order-1">
-            Showing
-            <span class="font-medium">{{ paginationStart }}</span>
-            to
-            <span class="font-medium">{{ paginationEnd }}</span>
-            of
-            <span class="font-medium">{{ totalDocumentsCount }}</span>
-            documents
+        <div class="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Showing <span class="font-medium">{{ paginationStart }}</span> to <span class="font-medium">{{ paginationEnd }}</span> of <span class="font-medium">{{ totalDocumentsCount }}</span> documents
           </div>
-          <div class="flex gap-2 order-1 sm:order-2">
+          <div class="flex gap-2">
             <UButton
               variant="outline"
               color="neutral"
