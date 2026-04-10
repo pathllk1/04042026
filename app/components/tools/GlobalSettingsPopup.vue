@@ -1179,9 +1179,9 @@ const isOpen = computed({
 });
 const activeTab = ref('tools');
 
-// Authentication state
-const tokenCookie = useCookie('token');
-const isAuthenticated = computed(() => Boolean(tokenCookie.value));
+// Authentication state - use useAuth() composable instead of checking cookie directly
+const { user, isLoggedIn } = useAuth();
+const isAuthenticated = computed(() => isLoggedIn.value);
 
 // Get user role information
 const { isAdmin, isSubContractor, isManager, hasRolePrivilege, ROLES } = useUserRole();
@@ -1379,7 +1379,7 @@ const allTools = [
     description: 'Manage your tasks and to-dos with priorities and due dates',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
     action: 'openTaskManager',
-    requiredRole: 'authenticated' // Available to all authenticated users
+    requiredRole: 'authenticated' // Available to authenticated users only
   },
   {
     id: 'todo-list',
@@ -1387,7 +1387,7 @@ const allTools = [
     description: 'Keep track of your daily todos with a simple checklist',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
     action: 'openTodoList',
-    requiredRole: 'authenticated' // Available to all authenticated users
+    requiredRole: 'authenticated' // Available to authenticated users only
   },
   {
     id: 'weather',

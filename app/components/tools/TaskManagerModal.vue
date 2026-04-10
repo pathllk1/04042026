@@ -336,8 +336,8 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 // Check if user is authenticated
-const token = useCookie('token');
-const isAuthenticated = computed(() => !!token.value);
+const { isLoggedIn } = useAuth();
+const isAuthenticated = computed(() => isLoggedIn.value);
 
 // Task state
 const {

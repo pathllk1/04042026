@@ -21,7 +21,7 @@ const ROLE_HIERARCHY = [
 ];
 
 export default function useUserRole() {
-  const tokenCookie = useCookie('token');
+  const tokenCookie = useCookie('access_token');
 
   /**
    * Decode the JWT token to get the payload
