@@ -1902,13 +1902,13 @@ const navigateTo = (pathOrAction) => {
   // Check if it's a special action
   if (pathOrAction === 'openCalculator') {
     window.dispatchEvent(new CustomEvent('open-calculator'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
   if (pathOrAction === 'openPdfTools') {
     window.dispatchEvent(new CustomEvent('open-pdf-tools'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
@@ -1916,31 +1916,31 @@ const navigateTo = (pathOrAction) => {
 
   if (pathOrAction === 'openTaskManager') {
     window.dispatchEvent(new CustomEvent('open-task-manager'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
   if (pathOrAction === 'openTodoList') {
     window.dispatchEvent(new CustomEvent('open-todo-list'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
   if (pathOrAction === 'openTextToImage') {
     window.dispatchEvent(new CustomEvent('open-text-to-image'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
   if (pathOrAction === 'openWeather') {
     window.dispatchEvent(new CustomEvent('open-weather'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 
   if (pathOrAction === 'openTranslator') {
     window.dispatchEvent(new CustomEvent('open-translator'));
-    closePopup();
+    // Keep the settings modal open in the background
     return;
   }
 

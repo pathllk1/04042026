@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[110]" @click.self="closeModal">
+  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[300]" @click.self="closeModal">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
       <!-- Header -->
       <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 flex justify-between items-center">

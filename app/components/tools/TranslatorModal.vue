@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[200] transition-opacity duration-300 ease-in-out overflow-y-auto">
+  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[300] transition-opacity duration-300 ease-in-out overflow-y-auto">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl p-6 relative max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-in-out scale-100">
       <!-- Close Button -->
       <button @click="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-10">
