@@ -1,180 +1,172 @@
 <template>
-  <div class="fixed inset-0 z-[200] overflow-y-auto" v-if="isOpen">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-      </div>
+  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[200] transition-opacity duration-300 ease-in-out overflow-y-auto">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl p-6 relative max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-in-out scale-100">
+      <!-- Close Button -->
+      <button @click="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+      <!-- Header -->
+      <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center mb-6" id="modal-headline">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        </svg>
+        Language Translator
+      </h3>
 
-      <div
-        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-headline"
-      >
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="sm:flex sm:items-start">
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-              <h3 class="text-lg leading-6 font-medium text-gray-900 flex items-center" id="modal-headline">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-                Language Translator
-              </h3>
-
-              <div class="mt-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <!-- Source Language and Text -->
-                  <div class="flex flex-col">
-                    <div class="flex justify-between mb-2">
-                      <label class="block text-sm font-medium text-gray-700">Source Language</label>
-                      <div v-if="isDetecting" class="text-sm text-blue-500">Detecting...</div>
-                      <div v-else-if="detectedLanguage" class="text-sm text-green-500">
-                        Detected: {{ getLanguageName(detectedLanguage.language) }} ({{ Math.round(detectedLanguage.confidence * 100) }}% confidence)
-                      </div>
-                    </div>
-
-                    <select
-                      v-model="sourceLanguage"
-                      class="mb-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="auto">Auto Detect</option>
-                      <option v-for="lang in languages" :key="lang.code" :value="lang.code">
-                        {{ lang.name }}
-                      </option>
-                    </select>
-
-                    <textarea
-                      v-model="sourceText"
-                      rows="8"
-                      class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Enter text to translate..."
-                      @input="debouncedTranslate"
-                    ></textarea>
-
-                    <div class="flex justify-between mt-2">
-                      <span class="text-sm text-gray-500">{{ sourceText.length }} characters</span>
-                      <button
-                        @click="clearSource"
-                        class="text-sm text-red-500 hover:text-red-700"
-                        v-if="sourceText"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Target Language and Translation -->
-                  <div class="flex flex-col">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Target Language</label>
-                    <select
-                      v-model="targetLanguage"
-                      class="mb-4 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option v-for="lang in languages" :key="lang.code" :value="lang.code">
-                        {{ lang.name }}
-                      </option>
-                    </select>
-
-                    <div class="relative">
-                      <textarea
-                        v-model="translatedText"
-                        rows="8"
-                        class="w-full rounded-md border-gray-300 shadow-sm bg-gray-50"
-                        readonly
-                      ></textarea>
-
-                      <div
-                        v-if="isLoading"
-                        class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70"
-                      >
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                      </div>
-                    </div>
-
-                    <div class="flex justify-end mt-2">
-                      <button
-                        @click="copyTranslation"
-                        class="text-sm text-blue-500 hover:text-blue-700 flex items-center"
-                        v-if="translatedText"
-                      >
-                        <span v-if="copied">Copied!</span>
-                        <span v-else>Copy to clipboard</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mt-6 flex justify-center">
-                  <button
-                    @click="translate"
-                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    :disabled="isLoading || !sourceText"
-                  >
-                    {{ isLoading ? 'Translating...' : 'Translate' }}
-                  </button>
-                </div>
-
-                <div class="mt-4 text-center text-xs text-gray-500">
-                  Powered by {{ provider ? provider : 'Translation API' }}
-                  <span v-if="matchQuality !== null"> - Match Quality: {{ Math.round(matchQuality * 100) }}%</span>
-                </div>
-
-                <!-- Translation History -->
-                <div v-if="translationHistory.length > 0" class="mt-8">
-                  <h2 class="text-lg font-semibold mb-3">Recent Translations</h2>
-                  <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original Text</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Translation</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Languages</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody class="bg-white divide-y divide-gray-200">
-                        <tr v-for="(item, index) in translationHistory.slice(0, 3)" :key="index">
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px]">{{ item.sourceText }}</td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px]">{{ item.translatedText }}</td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ getLanguageName(item.sourceLanguage) }} → {{ getLanguageName(item.targetLanguage) }}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <button @click="restoreTranslation(item)" class="text-blue-500 hover:text-blue-700 mr-3">
-                              Restore
-                            </button>
-                            <button @click="removeFromHistory(index)" class="text-red-500 hover:text-red-700">
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="mt-2 text-right">
-                    <button
-                      @click="clearHistory"
-                      class="text-sm text-red-500 hover:text-red-700"
-                    >
-                      Clear History
-                    </button>
-                  </div>
-                </div>
+      <!-- Content -->
+      <div class="mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Source Language and Text -->
+          <div class="flex flex-col">
+            <div class="flex justify-between mb-2">
+              <label class="block text-sm font-medium text-gray-700">Source Language</label>
+              <div v-if="isDetecting" class="text-sm text-blue-500">Detecting...</div>
+              <div v-else-if="detectedLanguage" class="text-sm text-green-500">
+                Detected: {{ getLanguageName(detectedLanguage.language) }} ({{ Math.round(detectedLanguage.confidence * 100) }}% confidence)
               </div>
+            </div>
+
+            <select
+              v-model="sourceLanguage"
+              class="mb-4 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            >
+              <option value="auto">Auto Detect</option>
+              <option v-for="lang in languages" :key="lang.code" :value="lang.code">
+                {{ lang.name }}
+              </option>
+            </select>
+
+            <textarea
+              v-model="sourceText"
+              rows="8"
+              class="w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+              placeholder="Enter text to translate..."
+              @input="debouncedTranslate"
+            ></textarea>
+
+            <div class="flex justify-between mt-2">
+              <span class="text-sm text-gray-500">{{ sourceText.length }} characters</span>
+              <button
+                @click="clearSource"
+                class="text-sm text-red-500 hover:text-red-700"
+                v-if="sourceText"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <!-- Target Language and Translation -->
+          <div class="flex flex-col">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Target Language</label>
+            <select
+              v-model="targetLanguage"
+              class="mb-4 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+            >
+              <option v-for="lang in languages" :key="lang.code" :value="lang.code">
+                {{ lang.name }}
+              </option>
+            </select>
+
+            <div class="relative">
+              <textarea
+                v-model="translatedText"
+                rows="8"
+                class="w-full rounded-md border border-gray-300 shadow-sm bg-gray-50 px-3 py-2"
+                readonly
+              ></textarea>
+
+              <div
+                v-if="isLoading"
+                class="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md"
+              >
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            </div>
+
+            <div class="flex justify-end mt-2">
+              <button
+                @click="copyTranslation"
+                class="text-sm text-blue-500 hover:text-blue-700 flex items-center"
+                v-if="translatedText"
+              >
+                <span v-if="copied">Copied!</span>
+                <span v-else>Copy to clipboard</span>
+              </button>
             </div>
           </div>
         </div>
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+
+        <div class="mt-6 flex justify-center">
           <button
-            type="button"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            @click="closeModal"
+            @click="translate"
+            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            :disabled="isLoading || !sourceText"
           >
-            Close
+            {{ isLoading ? 'Translating...' : 'Translate' }}
           </button>
         </div>
+
+        <div class="mt-4 text-center text-xs text-gray-500">
+          Powered by {{ provider ? provider : 'Translation API' }}
+          <span v-if="matchQuality !== null"> - Match Quality: {{ Math.round(matchQuality * 100) }}%</span>
+        </div>
+
+        <!-- Translation History -->
+        <div v-if="translationHistory.length > 0" class="mt-8">
+          <h2 class="text-lg font-semibold mb-3">Recent Translations</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original Text</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Translation</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Languages</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="(item, index) in translationHistory.slice(0, 3)" :key="index">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px]">{{ item.sourceText }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px]">{{ item.translatedText }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {{ getLanguageName(item.sourceLanguage) }} → {{ getLanguageName(item.targetLanguage) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button @click="restoreTranslation(item)" class="text-blue-500 hover:text-blue-700 mr-3">
+                      Restore
+                    </button>
+                    <button @click="removeFromHistory(index)" class="text-red-500 hover:text-red-700">
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2 text-right">
+            <button
+              @click="clearHistory"
+              class="text-sm text-red-500 hover:text-red-700"
+            >
+              Clear History
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          @click="closeModal"
+        >
+          Close
+        </button>
       </div>
     </div>
   </div>

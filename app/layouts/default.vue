@@ -1,11 +1,27 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import GlobalSettingsPopup from '~/components/tools/GlobalSettingsPopup.vue'
+import CalculatorModal from '~/components/tools/CalculatorModal.vue'
+import TranslatorModal from '~/components/tools/TranslatorModal.vue'
+import WeatherModal from '~/components/tools/WeatherModal.vue'
+import PdfToolsModal from '~/components/tools/PdfToolsModal.vue'
+import TaskManagerModal from '~/components/tools/TaskManagerModal.vue'
+import TodoListModal from '~/components/tools/TodoListModal.vue'
+import TextToImageModal from '~/components/tools/TextToImageModal.vue'
 
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(true)
 const isWagesDropdownOpen = ref(false)
 const showSettingsModal = ref(false)
+
+// Tool modals state
+const showCalculatorModal = ref(false)
+const showTranslatorModal = ref(false)
+const showWeatherModal = ref(false)
+const showPdfToolsModal = ref(false)
+const showTaskManagerModal = ref(false)
+const showTodoListModal = ref(false)
+const showTextToImageModal = ref(false)
 
 const { user, isLoggedIn, logout } = useAuth()
 const route = useRoute()
@@ -26,6 +42,41 @@ const wagesMenuItems = [
   { label: 'Employee Advances', to: '/wages/employee-advances', icon: 'i-lucide-wallet', description: 'Manage advances and recoveries' },
   { label: 'Reports', to: '/wages/report', icon: 'i-lucide-file-text', description: 'Generate wage and payment reports' }
 ]
+
+// Event listeners for tool modals
+onMounted(() => {
+  window.addEventListener('open-calculator', () => {
+    showCalculatorModal.value = true
+  })
+  window.addEventListener('open-translator', () => {
+    showTranslatorModal.value = true
+  })
+  window.addEventListener('open-weather', () => {
+    showWeatherModal.value = true
+  })
+  window.addEventListener('open-pdf-tools', () => {
+    showPdfToolsModal.value = true
+  })
+  window.addEventListener('open-task-manager', () => {
+    showTaskManagerModal.value = true
+  })
+  window.addEventListener('open-todo-list', () => {
+    showTodoListModal.value = true
+  })
+  window.addEventListener('open-text-to-image', () => {
+    showTextToImageModal.value = true
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-calculator', () => {})
+  window.removeEventListener('open-translator', () => {})
+  window.removeEventListener('open-weather', () => {})
+  window.removeEventListener('open-pdf-tools', () => {})
+  window.removeEventListener('open-task-manager', () => {})
+  window.removeEventListener('open-todo-list', () => {})
+  window.removeEventListener('open-text-to-image', () => {})
+})
 </script>
 
 <template>
@@ -353,5 +404,41 @@ const wagesMenuItems = [
   <!-- Global Settings Modal -->
   <GlobalSettingsPopup 
     v-model:isOpen="showSettingsModal"
+  />
+
+  <!-- Tool Modals -->
+  <CalculatorModal 
+    :isOpen="showCalculatorModal"
+    @close="showCalculatorModal = false"
+  />
+
+  <TranslatorModal 
+    :isOpen="showTranslatorModal"
+    @close="showTranslatorModal = false"
+  />
+
+  <WeatherModal 
+    :isOpen="showWeatherModal"
+    @close="showWeatherModal = false"
+  />
+
+  <PdfToolsModal 
+    :isOpen="showPdfToolsModal"
+    @close="showPdfToolsModal = false"
+  />
+
+  <TaskManagerModal 
+    :isOpen="showTaskManagerModal"
+    @close="showTaskManagerModal = false"
+  />
+
+  <TodoListModal 
+    :isOpen="showTodoListModal"
+    @close="showTodoListModal = false"
+  />
+
+  <TextToImageModal 
+    :isOpen="showTextToImageModal"
+    @close="showTextToImageModal = false"
   />
 </template>
