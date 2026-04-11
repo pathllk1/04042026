@@ -1,25 +1,35 @@
-import { defineEventHandler, createError } from 'h3';
+import { defineEventHandler, getQuery, createError } from 'h3';
 import { $fetch } from 'ofetch';
+import { useRuntimeConfig } from '#imports';
 
-// WeatherAPI.com - with your API key
+// WeatherAPI.com Configuration
 const WEATHER_API_BASE_URL = 'https://api.weatherapi.com/v1';
-const WEATHER_API_KEY = '4fbe39bd42bb4bb7901105614252404'; // Your API key
 
 export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig(event);
+  const WEATHER_API_KEY = config.weatherApiKey;
+
+  if (!WEATHER_API_KEY) {
+    throw createError({
+      statusCode: 500,
+      message: 'Weather API key not configured'
+    });
+  }
+
   try {
     // Get query parameters
     const query = getQuery(event);
-    const city = query.city || 'London'; // Default to London if no city provided
-    const units = query.units || 'metric'; // Default to metric units
+    const city = (query.city as string) || 'London';
+    const units = (query.units as string) || 'metric';
 
     // Fetch current weather and forecast data with AQI and alerts
     const data = await $fetch(`${WEATHER_API_BASE_URL}/forecast.json`, {
       params: {
         key: WEATHER_API_KEY,
         q: city,
-        days: 3, // Limit to 3 days
-        aqi: 'yes', // Include air quality data
-        alerts: 'yes' // Include weather alerts
+        days: 3,
+        aqi: 'yes',
+        alerts: 'yes'
       }
     });
 
@@ -38,7 +48,6 @@ export default defineEventHandler(async (event) => {
       timestamp: new Date(data.location.localtime).getTime(),
       sunrise: new Date(`${data.forecast.forecastday[0].date} ${data.forecast.forecastday[0].astro.sunrise}`).getTime(),
       sunset: new Date(`${data.forecast.forecastday[0].date} ${data.forecast.forecastday[0].astro.sunset}`).getTime(),
-      // Air Quality Data
       aqi: data.current.air_quality ? {
         co: data.current.air_quality.co,
         no2: data.current.air_quality.no2,
@@ -51,17 +60,12 @@ export default defineEventHandler(async (event) => {
       } : null
     };
 
-    // Process forecast data
     const forecast = [];
-
-    // Add hourly forecast for today
     const now = new Date();
     const currentTimestamp = now.getTime();
 
     data.forecast.forecastday[0].hour.forEach((hour: any) => {
       const hourTime = new Date(hour.time).getTime();
-
-      // Only include future hours
       if (hourTime > currentTimestamp) {
         forecast.push({
           timestamp: hourTime,
@@ -78,11 +82,10 @@ export default defineEventHandler(async (event) => {
       }
     });
 
-    // Add hourly forecast for next days (first 8 hours of each day)
     for (let i = 1; i < Math.min(3, data.forecast.forecastday.length); i++) {
       const day = data.forecast.forecastday[i];
       for (let j = 0; j < 8; j++) {
-        const hour = day.hour[j * 3]; // Every 3 hours
+        const hour = day.hour[j * 3];
         forecast.push({
           timestamp: new Date(hour.time).getTime(),
           temperature: units === 'metric' ? hour.temp_c : hour.temp_f,
@@ -98,7 +101,6 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Create daily forecast data
     const dailyForecast = data.forecast.forecastday.map((day: any) => ({
       date: new Date(day.date).getTime(),
       minTemp: units === 'metric' ? day.day.mintemp_c : day.day.mintemp_f,
@@ -112,7 +114,6 @@ export default defineEventHandler(async (event) => {
       humidity: day.day.avghumidity
     }));
 
-    // Process alerts data
     const alerts = data.alerts && data.alerts.alert ?
       data.alerts.alert.map((alert: any) => ({
         headline: alert.headline,
@@ -141,13 +142,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-// Helper function to get query parameters
-function getQuery(event: any): Record<string, string> {
-  const url = new URL(event.node.req.url, 'http://localhost');
-  const params: Record<string, string> = {};
-  url.searchParams.forEach((value, key) => {
-    params[key] = value;
-  });
-  return params;
-}

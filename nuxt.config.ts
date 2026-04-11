@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/image', '@nuxt/ui'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
+    weatherApiKey: process.env.WEATHER_API_KEY || '',
     // public runtime config if needed
     public: {}
   }

@@ -157,14 +157,14 @@
                 </div>
               </div>
               <!-- Air Quality Index -->
-              <div v-if="weather.current.aqi" class="mt-4 p-3 bg-white bg-opacity-20 rounded-lg">
-                <h4 class="text-sm font-semibold mb-2 flex items-center">
+              <div v-if="weather.current.aqi" class="mt-4 p-3 bg-white/10 rounded-lg border border-white/10">
+                <h4 class="text-sm font-semibold mb-2 flex items-center text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   Air Quality Index
                 </h4>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-xs text-white/90">
                   <div class="flex items-center">
                     <div class="w-2 h-2 rounded-full mr-1" :class="getAqiColor(weather.current.aqi.usEpaIndex)"></div>
                     <span>US EPA Index: {{ weather.current.aqi.usEpaIndex }} - {{ getAqiLabel(weather.current.aqi.usEpaIndex) }}</span>
@@ -181,7 +181,7 @@
                 <button
                   v-if="!isCitySaved"
                   @click="saveCity(weather.current.city)"
-                  class="text-xs bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded-full flex items-center transition-colors duration-300"
+                  class="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full flex items-center transition-colors duration-300 border border-white/10"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
