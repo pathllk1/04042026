@@ -1700,26 +1700,29 @@ const openAISettings = () => {
 // Provider model definitions
 const providerModels = {
   google: [
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Experimental' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' }
+    { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash (Latest)' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Latest)' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite' },
+    { id: 'gemma-4-31b', name: 'Gemma 4 31B (Open Model)' },
+    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Experimental' }
   ],
   openrouter: [
-    { id: 'deepseek/deepseek-chat-v3-0324:free', name: 'DeepSeek Chat V3 (Free)' },
-    { id: 'deepseek/deepseek-r1-0528:free', name: 'DeepSeek R1 (Free)' },
-    { id: 'deepseek/deepseek-v3-0324:free', name: 'DeepSeek V3 (Free)' },
-    { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B Instruct (Free)' },
-    { id: 'microsoft/phi-3-mini-128k-instruct:free', name: 'Phi-3 Mini (Free)' },
-    { id: 'meta-llama/llama-3.2-3b-instruct:free', name: 'Llama 3.2 3B (Free)' }
+    { id: 'google/gemma-4-31b:free', name: '🆓 Gemma 4 31B (Free)' },
+    { id: 'meta-llama/llama-4-scout:free', name: '🆓 Llama 4 Scout (Free)' },
+    { id: 'qwen/qwen-3-coder-480b:free', name: '🆓 Qwen 3 Coder 480B (Free)' },
+    { id: 'openai/gpt-oss-120b:free', name: '🆓 OpenAI GPT-OSS 120B (Free)' },
+    { id: 'deepseek/deepseek-r1:free', name: '🆓 DeepSeek R1 (Free)' },
+    { id: 'google/gemini-2.5-pro-exp:free', name: '🆓 Gemini 2.5 Pro Exp (Free)' },
+    { id: 'google/gemini-3.1-pro', name: 'Gemini 3.1 Pro' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }
   ],
   groq: [
+    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Reasoning)' },
+    { id: 'meta-llama/llama-4-scout-17b', name: 'Llama 4 Scout 17B' },
     { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile' },
-    { id: 'llama-3.1-70b-versatile', name: 'Llama 3.1 70B Versatile' },
-    { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' },
-    { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
+    { id: 'qwen/qwen3-32b', name: 'Qwen 3 32B (Latest)' },
     { id: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill Llama 70B' },
-    { id: 'gemma2-9b-it', name: 'Gemma 2 9B IT' }
+    { id: 'mistral-saba-24b', name: 'Mistral Saba 24B' }
   ]
 };
 

@@ -183,7 +183,7 @@ export const useAIConversationEngine = () => {
   }
 
   /**
-   * Call AI model with conversation context using direct config
+   * Call AI model with conversation context using direct config via unified backend API
    */
   const callAIModelWithConfig = async (
     config: { provider: string, model: string, apiKey: string },
@@ -201,7 +201,7 @@ export const useAIConversationEngine = () => {
       : prompt
 
     const promptTokens = estimateTokens(fullPrompt)
-    console.log(`🤖 Calling ${provider}/${model} with prompt length: ${fullPrompt.length} chars (~${promptTokens} tokens)`)
+    console.log(`🤖 Calling unified API for ${provider}/${model} with prompt length: ${fullPrompt.length} chars (~${promptTokens} tokens)`)
 
     // Validate API key
     if (!apiKey) {
@@ -209,107 +209,30 @@ export const useAIConversationEngine = () => {
     }
 
     try {
-      if (provider === 'google') {
-        // Use Google Generative AI SDK directly
-        const { GoogleGenerativeAI } = await import('@google/generative-ai')
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const geminiModel = genAI.getGenerativeModel({ model: model })
-
-        const result = await geminiModel.generateContent(fullPrompt)
-        const rawResponse = result.response.text()
-        const cleanedResponse = cleanAIResponse(rawResponse)
-
-        console.log(`✅ ${provider}/${model} responded: ${rawResponse.length} → ${cleanedResponse.length} chars (after cleaning)`)
-        return cleanedResponse
-      } else if (provider === 'openrouter') {
-        // Use OpenRouter API
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'AI Model Conversation'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: fullPrompt }],
+      // Use unified dynamic chat endpoint
+      const response = await $fetch<{ message: string }>('/api/ai/dynamic-chat', {
+        method: 'POST',
+        headers: {
+          'x-ai-config': JSON.stringify({
+            provider,
+            model,
+            apiKey,
             temperature: 0.7,
-            max_tokens: 1500
+            maxTokens: 1500
           })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(`OpenRouter API error: ${response.status} - ${JSON.stringify(errorData)}`)
+        },
+        body: {
+          userMessage: fullPrompt,
+          conversationHistory: [] // History is already part of fullPrompt in this engine
         }
+      })
 
-        const data = await response.json()
-        const rawResponse = data.choices[0].message.content
-        const cleanedResponse = cleanAIResponse(rawResponse)
+      const cleanedResponse = cleanAIResponse(response.message)
+      console.log(`✅ ${provider}/${model} responded via unified API: ${response.message.length} → ${cleanedResponse.length} chars`)
+      return cleanedResponse
 
-        console.log(`✅ ${provider}/${model} responded: ${rawResponse.length} → ${cleanedResponse.length} chars (after cleaning)`)
-        return cleanedResponse
-      } else if (provider === 'groq') {
-        // Use Groq API
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: fullPrompt }],
-            temperature: 0.7,
-            max_tokens: 1500
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(`Groq API error: ${response.status} - ${JSON.stringify(errorData)}`)
-        }
-
-        const data = await response.json()
-        const rawResponse = data.choices[0].message.content
-        const cleanedResponse = cleanAIResponse(rawResponse)
-
-        console.log(`✅ ${provider}/${model} responded: ${rawResponse.length} → ${cleanedResponse.length} chars (after cleaning)`)
-        return cleanedResponse
-      } else {
-        // For other providers, try a generic OpenAI-compatible approach
-        console.log(`⚠️ Using generic OpenAI-compatible API for provider: ${provider}`)
-
-        // This is a fallback - might not work for all providers
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: fullPrompt }],
-            temperature: 0.7,
-            max_tokens: 1500
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(`${provider} API error: ${response.status} - ${JSON.stringify(errorData)}`)
-        }
-
-        const data = await response.json()
-        const rawResponse = data.choices[0].message.content
-        const cleanedResponse = cleanAIResponse(rawResponse)
-
-        console.log(`✅ ${provider}/${model} responded: ${rawResponse.length} → ${cleanedResponse.length} chars (after cleaning)`)
-        return cleanedResponse
-      }
     } catch (error: any) {
-      console.error(`❌ Error calling ${provider}/${model}:`, error)
+      console.error(`❌ Error calling ${provider}/${model} via unified API:`, error)
       throw new Error(`${provider}/${model} failed: ${error.message}`)
     }
   }

@@ -2,8 +2,8 @@
   <div class="container mx-auto px-4 py-8 max-w-5xl">
     <h1 class="text-3xl font-bold mb-2 text-indigo-700">AI Assistant</h1>
     <div class="mb-6 flex items-center">
-      <span class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full font-medium mr-2">Powered by Gemini 2.5 Flash Preview</span>
-      <span class="text-sm text-gray-600">Google's latest and most efficient AI model</span>
+      <span class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full font-medium mr-2">Powered by Gemini 3.1 Flash</span>
+      <span class="text-sm text-gray-600">Google's latest 2026 flagship AI model</span>
     </div>
 
     <!-- Mode Selector -->
@@ -1113,7 +1113,7 @@ const saveConversation = async () => {
         metadata: {
           isFullConversation: true,
           messageCount: chatHistory.value.length,
-          model: 'Gemini 2.5 Flash Preview',
+          model: 'Gemini 3.1 Flash',
           manualSaved: true
         }
       }

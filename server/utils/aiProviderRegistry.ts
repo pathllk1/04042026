@@ -11,6 +11,7 @@ export interface ServerAIProviderHandler {
   name: string
   detect: (config: AIConfiguration) => boolean
   generateContent: (request: AIRequest, config: AIConfiguration) => Promise<AIResponse>
+  generateContentStream?: (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void) => Promise<AIResponse>
 }
 
 // OpenAI Server Handler
@@ -18,41 +19,17 @@ const openaiServerHandler: ServerAIProviderHandler = {
   id: 'openai',
   name: 'OpenAI',
   detect: (config: AIConfiguration) => {
-    // Only detect OpenAI if explicitly set as provider, or if it's a genuine OpenAI model
-    // Exclude models that start with prefixes used by other providers
     if (config.provider === 'openai') return true
-
     const model = config.model || ''
-    const isGroqModel = model.startsWith('openai/gpt-oss') ||
-                       model.includes('llama') ||
-                       model.includes('whisper') ||
-                       model.includes('mistral') ||
-                       model.includes('deepseek')
-
+    const isGroqModel = model.startsWith('openai/gpt-oss') || model.includes('llama') || model.includes('whisper') || model.includes('mistral') || model.includes('deepseek')
     if (isGroqModel) return false
-
-    return model.includes('gpt') ||
-           model.includes('o1') ||
-           model.includes('o3')
+    return model.includes('gpt') || model.includes('o1') || model.includes('o3')
   },
   generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.apiKey) {
-      throw new Error('OpenAI API key is required')
-    }
-
-    const messages: Array<{ role: string; content: string }> = []
-    
-    if (request.systemPrompt) {
-      messages.push({ role: 'system', content: request.systemPrompt })
-    }
-
-    if (request.conversationHistory) {
-      messages.push(...request.conversationHistory)
-    }
-
-    messages.push({ role: 'user', content: request.prompt })
-
+    if (!config.apiKey) throw new Error('OpenAI API key is required')
+    const messages = buildOpenAIMessages(request)
     const baseUrl = config.baseUrl || 'https://api.openai.com/v1'
+    
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -68,13 +45,8 @@ const openaiServerHandler: ServerAIProviderHandler = {
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.status} - ${await response.text()}`)
     const data = await response.json()
-    
     return {
       content: data.choices?.[0]?.message?.content || '',
       usage: {
@@ -86,6 +58,64 @@ const openaiServerHandler: ServerAIProviderHandler = {
       provider: 'openai',
       finishReason: data.choices?.[0]?.finish_reason || 'stop'
     }
+  },
+  generateContentStream: async (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void): Promise<AIResponse> => {
+    if (!config.apiKey) throw new Error('OpenAI API key is required')
+    const messages = buildOpenAIMessages(request)
+    const baseUrl = config.baseUrl || 'https://api.openai.com/v1'
+    
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages,
+        temperature: request.temperature ?? config.temperature ?? 0.7,
+        max_tokens: request.maxTokens ?? config.maxTokens ?? 8192,
+        stream: true
+      })
+    })
+
+    if (!response.ok) throw new Error(`OpenAI API stream error: ${response.status} - ${await response.text()}`)
+    
+    // In-memory response reconstruction
+    let fullContent = ''
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('Failed to get response reader')
+    
+    const decoder = new TextDecoder()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '))
+      
+      for (const line of lines) {
+        const dataStr = line.replace('data: ', '').trim()
+        if (dataStr === '[DONE]') break
+        
+        try {
+          const data = JSON.parse(dataStr)
+          const content = data.choices?.[0]?.delta?.content || ''
+          if (content) {
+            fullContent += content
+            onChunk(content)
+          }
+        } catch (e) {
+          console.warn('Error parsing OpenAI stream chunk:', e)
+        }
+      }
+    }
+
+    return {
+      content: fullContent,
+      model: config.model,
+      provider: 'openai'
+    }
   }
 }
 
@@ -94,14 +124,10 @@ const googleServerHandler: ServerAIProviderHandler = {
   id: 'google',
   name: 'Google Gemini',
   detect: (config: AIConfiguration) => {
-    return config.provider === 'google' || 
-           config.model?.includes('gemini')
+    return config.provider === 'google' || config.model?.includes('gemini')
   },
   generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.apiKey) {
-      throw new Error('Google AI API key is required')
-    }
-
+    if (!config.apiKey) throw new Error('Google AI API key is required')
     const genAI = new GoogleGenerativeAI(config.apiKey)
     const model = genAI.getGenerativeModel({ 
       model: config.model,
@@ -111,12 +137,6 @@ const googleServerHandler: ServerAIProviderHandler = {
       }
     })
 
-    let prompt = request.prompt
-    if (request.systemPrompt) {
-      prompt = `${request.systemPrompt}\n\n${request.prompt}`
-    }
-
-    // Handle conversation history for Google
     if (request.conversationHistory && request.conversationHistory.length > 0) {
       const chat = model.startChat({
         history: request.conversationHistory.map(msg => ({
@@ -124,68 +144,59 @@ const googleServerHandler: ServerAIProviderHandler = {
           parts: [{ text: msg.content }]
         }))
       })
-      
       const result = await chat.sendMessage(request.prompt)
-      const response = result.response
-
-      let content = ''
-      try {
-        content = response.text()
-        console.log('🔍 [GOOGLE CHAT] Successfully extracted text:', content.substring(0, 100) + '...')
-      } catch (error) {
-        console.error('❌ [GOOGLE CHAT] Error extracting text from response:', error)
-        console.log('🔍 [GOOGLE CHAT] Response object:', JSON.stringify(response, null, 2))
-        // Try alternative extraction methods
-        try {
-          content = response.candidates?.[0]?.content?.parts?.[0]?.text || ''
-          console.log('🔍 [GOOGLE CHAT] Alternative extraction successful:', content.substring(0, 100) + '...')
-        } catch (altError) {
-          console.error('❌ [GOOGLE CHAT] Alternative extraction also failed:', altError)
-        }
-      }
-
       return {
-        content,
-        usage: {
-          inputTokens: 0, // Google doesn't provide detailed token usage
-          outputTokens: 0,
-          totalTokens: 0
-        },
+        content: result.response.text(),
         model: config.model,
-        provider: 'google',
-        finishReason: 'stop'
+        provider: 'google'
       }
     } else {
-      const result = await model.generateContent(prompt)
-      const response = result.response
-
-      let content = ''
-      try {
-        content = response.text()
-        console.log('🔍 [GOOGLE] Successfully extracted text:', content.substring(0, 100) + '...')
-      } catch (error) {
-        console.error('❌ [GOOGLE] Error extracting text from response:', error)
-        console.log('🔍 [GOOGLE] Response object:', JSON.stringify(response, null, 2))
-        // Try alternative extraction methods
-        try {
-          content = response.candidates?.[0]?.content?.parts?.[0]?.text || ''
-          console.log('🔍 [GOOGLE] Alternative extraction successful:', content.substring(0, 100) + '...')
-        } catch (altError) {
-          console.error('❌ [GOOGLE] Alternative extraction also failed:', altError)
-        }
-      }
-
+      const result = await model.generateContent(request.systemPrompt ? `${request.systemPrompt}\n\n${request.prompt}` : request.prompt)
       return {
-        content,
-        usage: {
-          inputTokens: 0,
-          outputTokens: 0,
-          totalTokens: 0
-        },
+        content: result.response.text(),
         model: config.model,
-        provider: 'google',
-        finishReason: 'stop'
+        provider: 'google'
       }
+    }
+  },
+  generateContentStream: async (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void): Promise<AIResponse> => {
+    if (!config.apiKey) throw new Error('Google AI API key is required')
+    const genAI = new GoogleGenerativeAI(config.apiKey)
+    const model = genAI.getGenerativeModel({ 
+      model: config.model,
+      generationConfig: {
+        temperature: request.temperature ?? config.temperature ?? 0.7,
+        maxOutputTokens: request.maxTokens ?? config.maxTokens ?? 8192,
+      }
+    })
+
+    let fullContent = ''
+    if (request.conversationHistory && request.conversationHistory.length > 0) {
+      const chat = model.startChat({
+        history: request.conversationHistory.map(msg => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        }))
+      })
+      const result = await chat.sendMessageStream(request.prompt)
+      for await (const chunk of result.stream) {
+        const text = chunk.text()
+        fullContent += text
+        onChunk(text)
+      }
+    } else {
+      const result = await model.generateContentStream(request.systemPrompt ? `${request.systemPrompt}\n\n${request.prompt}` : request.prompt)
+      for await (const chunk of result.stream) {
+        const text = chunk.text()
+        fullContent += text
+        onChunk(text)
+      }
+    }
+
+    return {
+      content: fullContent,
+      model: config.model,
+      provider: 'google'
     }
   }
 }
@@ -195,24 +206,14 @@ const anthropicServerHandler: ServerAIProviderHandler = {
   id: 'anthropic',
   name: 'Anthropic Claude',
   detect: (config: AIConfiguration) => {
-    return config.provider === 'anthropic' || 
-           config.model?.includes('claude')
+    return config.provider === 'anthropic' || config.model?.includes('claude')
   },
   generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.apiKey) {
-      throw new Error('Anthropic API key is required')
-    }
-
-    const messages: Array<{ role: string; content: string }> = []
-    
-    if (request.conversationHistory) {
-      messages.push(...request.conversationHistory)
-    }
-
+    if (!config.apiKey) throw new Error('Anthropic API key is required')
+    const messages = request.conversationHistory?.map(m => ({ role: m.role, content: m.content })) || []
     messages.push({ role: 'user', content: request.prompt })
 
-    const baseUrl = config.baseUrl || 'https://api.anthropic.com/v1'
-    const response = await fetch(`${baseUrl}/messages`, {
+    const response = await fetch((config.baseUrl || 'https://api.anthropic.com/v1') + '/messages', {
       method: 'POST',
       headers: {
         'x-api-key': config.apiKey,
@@ -228,24 +229,64 @@ const anthropicServerHandler: ServerAIProviderHandler = {
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Anthropic API error: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
+    if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`)
     const data = await response.json()
-    
     return {
       content: data.content?.[0]?.text || '',
-      usage: {
-        inputTokens: data.usage?.input_tokens || 0,
-        outputTokens: data.usage?.output_tokens || 0,
-        totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0)
-      },
       model: config.model,
-      provider: 'anthropic',
-      finishReason: data.stop_reason || 'stop'
+      provider: 'anthropic'
     }
+  },
+  generateContentStream: async (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void): Promise<AIResponse> => {
+    if (!config.apiKey) throw new Error('Anthropic API key is required')
+    const messages = request.conversationHistory?.map(m => ({ role: m.role, content: m.content })) || []
+    messages.push({ role: 'user', content: request.prompt })
+
+    const response = await fetch((config.baseUrl || 'https://api.anthropic.com/v1') + '/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': config.apiKey,
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: request.maxTokens ?? config.maxTokens ?? 8192,
+        temperature: request.temperature ?? config.temperature ?? 0.7,
+        system: request.systemPrompt || undefined,
+        messages,
+        stream: true
+      })
+    })
+
+    if (!response.ok) throw new Error(`Anthropic stream error: ${response.status}`)
+    
+    let fullContent = ''
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+    const decoder = new TextDecoder()
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '))
+      
+      for (const line of lines) {
+        const dataStr = line.replace('data: ', '').trim()
+        try {
+          const data = JSON.parse(dataStr)
+          if (data.type === 'content_block_delta') {
+            const text = data.delta?.text || ''
+            fullContent += text
+            onChunk(text)
+          }
+        } catch (e) {}
+      }
+    }
+
+    return { content: fullContent, model: config.model, provider: 'anthropic' }
   }
 }
 
@@ -254,29 +295,13 @@ const openrouterServerHandler: ServerAIProviderHandler = {
   id: 'openrouter',
   name: 'OpenRouter',
   detect: (config: AIConfiguration) => {
-    return config.provider === 'openrouter' || 
-           config.model?.includes('/') ||
-           config.baseUrl?.includes('openrouter')
+    return config.provider === 'openrouter' || config.model?.includes('/') || config.baseUrl?.includes('openrouter')
   },
   generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.apiKey) {
-      throw new Error('OpenRouter API key is required')
-    }
-
-    const messages: Array<{ role: string; content: string }> = []
+    if (!config.apiKey) throw new Error('OpenRouter API key is required')
+    const messages = buildOpenAIMessages(request)
     
-    if (request.systemPrompt) {
-      messages.push({ role: 'system', content: request.systemPrompt })
-    }
-
-    if (request.conversationHistory) {
-      messages.push(...request.conversationHistory)
-    }
-
-    messages.push({ role: 'user', content: request.prompt })
-
-    const baseUrl = config.baseUrl || 'https://openrouter.ai/api/v1'
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${config.apiKey}`,
@@ -292,62 +317,19 @@ const openrouterServerHandler: ServerAIProviderHandler = {
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`)
-    }
-
+    if (!response.ok) throw new Error(`OpenRouter error: ${response.status}`)
     const data = await response.json()
-    
     return {
       content: data.choices?.[0]?.message?.content || '',
-      usage: {
-        inputTokens: data.usage?.prompt_tokens || 0,
-        outputTokens: data.usage?.completion_tokens || 0,
-        totalTokens: data.usage?.total_tokens || 0
-      },
       model: config.model,
-      provider: 'openrouter',
-      finishReason: data.choices?.[0]?.finish_reason || 'stop'
+      provider: 'openrouter'
     }
-  }
-}
-
-// Groq Server Handler
-const groqServerHandler: ServerAIProviderHandler = {
-  id: 'groq',
-  name: 'Groq Cloud',
-  detect: (config: AIConfiguration) => {
-    return config.provider === 'groq' ||
-           config.baseUrl?.includes('groq.com') ||
-           config.model?.includes('llama') ||
-           config.model?.includes('gemma') ||
-           config.model?.includes('qwen') ||
-           config.model?.includes('deepseek') ||
-           config.model?.includes('mistral') ||
-           config.model?.includes('whisper') ||
-           config.model?.startsWith('openai/gpt-oss') ||
-           config.model?.startsWith('meta-llama/llama-guard')
   },
-  generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.apiKey) {
-      throw new Error('Groq API key is required')
-    }
-
-    const messages: Array<{ role: string; content: string }> = []
-
-    if (request.systemPrompt) {
-      messages.push({ role: 'system', content: request.systemPrompt })
-    }
-
-    if (request.conversationHistory) {
-      messages.push(...request.conversationHistory)
-    }
-
-    messages.push({ role: 'user', content: request.prompt })
-
-    const baseUrl = config.baseUrl || 'https://api.groq.com/openai/v1'
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+  generateContentStream: async (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void): Promise<AIResponse> => {
+    if (!config.apiKey) throw new Error('OpenRouter API key is required')
+    const messages = buildOpenAIMessages(request)
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${config.apiKey}`,
@@ -358,71 +340,59 @@ const groqServerHandler: ServerAIProviderHandler = {
         messages,
         temperature: request.temperature ?? config.temperature ?? 0.7,
         max_tokens: request.maxTokens ?? config.maxTokens ?? 8192,
-        stream: false
+        stream: true
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${errorText}`)
+    if (!response.ok) throw new Error(`OpenRouter stream error: ${response.status}`)
+    
+    let fullContent = ''
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+    const decoder = new TextDecoder()
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '))
+      
+      for (const line of lines) {
+        const dataStr = line.replace('data: ', '').trim()
+        if (dataStr === '[DONE]') break
+        try {
+          const data = JSON.parse(dataStr)
+          const text = data.choices?.[0]?.delta?.content || ''
+          if (text) {
+            fullContent += text
+            onChunk(text)
+          }
+        } catch (e) {}
+      }
     }
 
-    const data = await response.json()
-
-    return {
-      content: data.choices?.[0]?.message?.content || '',
-      usage: {
-        inputTokens: data.usage?.prompt_tokens || 0,
-        outputTokens: data.usage?.completion_tokens || 0,
-        totalTokens: data.usage?.total_tokens || 0
-      },
-      model: config.model,
-      provider: 'groq',
-      finishReason: data.choices?.[0]?.finish_reason || 'stop'
-    }
+    return { content: fullContent, model: config.model, provider: 'openrouter' }
   }
 }
 
-// Custom Provider Server Handler
-const customServerHandler: ServerAIProviderHandler = {
-  id: 'custom',
-  name: 'Custom Provider',
+// Groq Server Handler
+const groqServerHandler: ServerAIProviderHandler = {
+  id: 'groq',
+  name: 'Groq Cloud',
   detect: (config: AIConfiguration) => {
-    return config.provider === 'custom' ||
-           (config.baseUrl && !['openai', 'google', 'anthropic', 'openrouter', 'groq'].includes(config.provider))
+    return config.provider === 'groq' || config.model?.includes('llama') || config.model?.includes('gemma') || config.model?.includes('qwen') || config.model?.includes('deepseek') || config.model?.includes('mistral') || config.model?.includes('whisper') || config.model?.startsWith('openai/gpt-oss')
   },
   generateContent: async (request: AIRequest, config: AIConfiguration): Promise<AIResponse> => {
-    if (!config.baseUrl) {
-      throw new Error('Custom provider requires baseUrl configuration')
-    }
-
-    const messages: Array<{ role: string; content: string }> = []
+    if (!config.apiKey) throw new Error('Groq API key is required')
+    const messages = buildOpenAIMessages(request)
     
-    if (request.systemPrompt) {
-      messages.push({ role: 'system', content: request.systemPrompt })
-    }
-
-    if (request.conversationHistory) {
-      messages.push(...request.conversationHistory)
-    }
-
-    messages.push({ role: 'user', content: request.prompt })
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    }
-
-    if (config.apiKey) {
-      headers['Authorization'] = `Bearer ${config.apiKey}`
-    }
-
-    if (config.customSettings?.headers) {
-      Object.assign(headers, config.customSettings.headers)
-    }
-
-    const response = await fetch(config.baseUrl, {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers,
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         model: config.model,
         messages,
@@ -431,72 +401,91 @@ const customServerHandler: ServerAIProviderHandler = {
       })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Custom provider API error: ${response.status} ${response.statusText} - ${errorText}`)
+    if (!response.ok) throw new Error(`Groq error: ${response.status}`)
+    const data = await response.json()
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model: config.model,
+      provider: 'groq'
+    }
+  },
+  generateContentStream: async (request: AIRequest, config: AIConfiguration, onChunk: (chunk: string) => void): Promise<AIResponse> => {
+    if (!config.apiKey) throw new Error('Groq API key is required')
+    const messages = buildOpenAIMessages(request)
+    
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages,
+        temperature: request.temperature ?? config.temperature ?? 0.7,
+        max_tokens: request.maxTokens ?? config.maxTokens ?? 8192,
+        stream: true
+      })
+    })
+
+    if (!response.ok) throw new Error(`Groq stream error: ${response.status}`)
+    
+    let fullContent = ''
+    const reader = response.body?.getReader()
+    if (!reader) throw new Error('No reader')
+    const decoder = new TextDecoder()
+    
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data: '))
+      
+      for (const line of lines) {
+        const dataStr = line.replace('data: ', '').trim()
+        if (dataStr === '[DONE]') break
+        try {
+          const data = JSON.parse(dataStr)
+          const text = data.choices?.[0]?.delta?.content || ''
+          if (text) {
+            fullContent += text
+            onChunk(text)
+          }
+        } catch (e) {}
+      }
     }
 
-    const data = await response.json()
-    
-    // Try different response formats
-    let content = ''
-    if (data.choices?.[0]?.message?.content) {
-      content = data.choices[0].message.content
-    } else if (data.content?.[0]?.text) {
-      content = data.content[0].text
-    } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      content = data.candidates[0].content.parts[0].text
-    } else {
-      content = data.response || data.text || JSON.stringify(data)
-    }
-    
-    return {
-      content,
-      usage: {
-        inputTokens: data.usage?.prompt_tokens || data.usage?.input_tokens || 0,
-        outputTokens: data.usage?.completion_tokens || data.usage?.output_tokens || 0,
-        totalTokens: data.usage?.total_tokens || 0
-      },
-      model: config.model,
-      provider: 'custom',
-      finishReason: data.choices?.[0]?.finish_reason || data.stop_reason || 'stop'
-    }
+    return { content: fullContent, model: config.model, provider: 'groq' }
   }
+}
+
+// Helper to build OpenAI compatible messages
+function buildOpenAIMessages(request: AIRequest) {
+  const messages = []
+  if (request.systemPrompt) messages.push({ role: 'system', content: request.systemPrompt })
+  if (request.conversationHistory) {
+    messages.push(...request.conversationHistory.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    })))
+  }
+  messages.push({ role: 'user', content: request.prompt })
+  return messages
 }
 
 // Server Provider Registry
 const serverProviderHandlers: ServerAIProviderHandler[] = [
-  groqServerHandler, // Check Groq first to avoid conflicts with OpenAI detection
+  groqServerHandler,
   openaiServerHandler,
   googleServerHandler,
   anthropicServerHandler,
-  openrouterServerHandler,
-  customServerHandler // Always last as fallback
+  openrouterServerHandler
 ]
 
 export const getServerProviderHandler = (config: AIConfiguration): ServerAIProviderHandler => {
-  console.log(`🔍 [SERVER] Detecting provider for: ${config.provider}/${config.model}`)
-  
   for (const handler of serverProviderHandlers) {
-    if (handler.detect(config)) {
-      console.log(`✅ [SERVER] Detected provider: ${handler.name} (${handler.id})`)
-      return handler
-    }
+    if (handler.detect(config)) return handler
   }
-  
-  // Fallback to custom handler
-  console.log(`🔄 [SERVER] No specific handler found, using custom handler`)
-  return customServerHandler
-}
-
-export const registerServerProviderHandler = (handler: ServerAIProviderHandler) => {
-  // Remove existing handler with same ID
-  const existingIndex = serverProviderHandlers.findIndex(h => h.id === handler.id)
-  if (existingIndex !== -1) {
-    serverProviderHandlers.splice(existingIndex, 1)
-  }
-  
-  // Add new handler (before custom fallback)
-  serverProviderHandlers.splice(-1, 0, handler)
-  console.log(`🔧 [SERVER] Registered new provider handler: ${handler.name}`)
+  return openrouterServerHandler // Default fallback
 }

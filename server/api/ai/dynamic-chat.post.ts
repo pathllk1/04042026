@@ -1,5 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { defineEventHandler, readBody, createError, getHeader } from 'h3';
 import AIHistory from '../../models/AIHistory';
+import { AIService, getAIConfigFromUser } from '../../utils/aiService';
 
 // Helper function to extract conversation summary and patterns
 function extractConversationSummary(conversationHistory: any[]): string {
@@ -8,13 +9,12 @@ function extractConversationSummary(conversationHistory: any[]): string {
   }
 
   const topics = new Set<string>();
-  const userPreferences = new Set<string>();
   const documentRequests = [];
   let questionCount = 0;
 
   for (const msg of conversationHistory) {
-    if (msg.type === 'user') {
-      const content = msg.content.toLowerCase();
+    if (msg.type === 'user' || msg.role === 'user') {
+      const content = (msg.content || '').toLowerCase();
 
       // Extract topics
       if (content.includes('gst') || content.includes('tax')) topics.add('taxation');
@@ -48,6 +48,8 @@ User engagement: ${conversationHistory.length > 10 ? 'high' : conversationHistor
 
 // Function to retrieve persistent memory from database
 async function retrievePersistentMemory(userId: string): Promise<string> {
+  if (!userId) return 'No user context available for memory';
+  
   try {
     // Get recent AI chat history for this user
     const recentHistory = await AIHistory.find({
@@ -64,7 +66,6 @@ async function retrievePersistentMemory(userId: string): Promise<string> {
 
     // Extract patterns and preferences
     const topics = new Set<string>();
-    const preferences = new Set<string>();
     const documentTypes = new Set<string>();
 
     for (const entry of recentHistory) {
@@ -99,7 +100,9 @@ User engagement pattern: ${recentHistory.length > 15 ? 'highly active' : recentH
 }
 
 // Function to save conversation to persistent memory
-async function saveToPersistentMemory(userId: string, userMessage: string, aiResponse: string): Promise<void> {
+async function saveToPersistentMemory(userId: string, userMessage: string, aiResponse: string, model: string): Promise<void> {
+  if (!userId) return;
+  
   try {
     await AIHistory.create({
       userId,
@@ -107,7 +110,7 @@ async function saveToPersistentMemory(userId: string, userMessage: string, aiRes
       question: userMessage,
       answer: aiResponse,
       metadata: {
-        model: 'gemini-2.5-flash',
+        model: model || 'unknown',
         timestamp: new Date(),
         source: 'dynamic-chat'
       }
@@ -127,8 +130,6 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'User message is required'
       });
     }
-
-
 
     // Handle system initialization
     if (userMessage === 'SYSTEM_INIT') {
@@ -160,31 +161,22 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Initialize AI using runtime config like other endpoints
-    const config = useRuntimeConfig();
-    const apiKey = config.googleAiApiKey;
-    if (!apiKey) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Google AI API key is not configured'
-      });
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    // Use same working model as other AI endpoints
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    // Get AI configuration from user (respects UI settings or fallbacks)
+    const aiConfig = await getAIConfigFromUser(event);
+    const aiService = new AIService(aiConfig);
 
     // Get user context for memory
     const userId = event.context.userId;
-    const firmId = event.context.user?.firmId;
+    const user = event.context.user;
+    const firmId = user?.firmId;
 
     // Retrieve persistent memory from database
-    const persistentMemory = await retrievePersistentMemory(userId);
+    const persistentMemory = userId ? await retrievePersistentMemory(userId) : 'No user context';
 
     // Build enhanced conversation context with better memory
     const recentContext = conversationHistory
-      ?.slice(-10) // Increased to last 10 messages for better context
-      ?.map((msg: any) => `${msg.type === 'user' ? 'User' : 'AI'}: ${msg.content}`)
+      ?.slice(-10) 
+      ?.map((msg: any) => `${(msg.type === 'user' || msg.role === 'user') ? 'User' : 'AI'}: ${msg.content}`)
       ?.join('\n') || '';
 
     // Extract key topics and patterns from conversation history
@@ -202,8 +194,8 @@ PERSISTENT MEMORY (from previous sessions):
 ${persistentMemory}
 
 USER CONTEXT:
-- User ID: ${userId}
-- Firm ID: ${firmId}
+- User: ${user?.fullname || 'Unknown User'}
+- Firm: ${firmId || 'No firm selected'}
 - Session: Current conversation with persistent memory
 `;
 
@@ -225,27 +217,24 @@ MEMORY INSTRUCTIONS:
 - Show that you understand the ongoing conversation flow
 
 YOUR CAPABILITIES:
-1. Answer questions based on your training knowledge (up to your knowledge cutoff)
+1. Answer questions based on your training knowledge
 2. Provide explanations and guidance on various topics
 3. Help with business, technical, or personal topics
-4. Create professional documents when specifically requested
+4. Create professional documents when specifically requested (Quotations, Invoices, Contracts, etc.)
 5. Offer suggestions and follow-up questions
 6. Be conversational and helpful
 
 IMPORTANT LIMITATIONS:
-- You do NOT have access to real-time information (weather, news, stock prices, etc.)
-- You do NOT have internet access to fetch current data
-- You do NOT have access to live databases or APIs
+- You do NOT have access to real-time information unless the user provides it
+- You do NOT have direct internet access to fetch current live data
 - If asked for real-time information, be honest about your limitations and suggest alternatives
 
 RESPONSE INSTRUCTIONS:
 - Analyze the user's message to understand their intent
 - If they're asking a question, provide a helpful answer based on your knowledge
-- If they ask for real-time data you don't have, be honest and suggest where they can find it
 - If they want a document created, acknowledge and offer to create it
 - If they need clarification, ask follow-up questions
 - Always be helpful, professional, and conversational
-- Never use placeholder text like [Temperature] or [Data] - be specific or admit limitations
 - Provide relevant suggestions for follow-up questions or actions
 
 RESPONSE FORMAT: Return ONLY a valid JSON object:
@@ -271,35 +260,25 @@ RESPONSE FORMAT: Return ONLY a valid JSON object:
     }
   ]
 }
-
-DOCUMENT DETECTION:
-If the user is asking to "create", "generate", "make", "prepare" any document (quotation, invoice, agreement, certificate, proposal, etc.), set action to "create_document" and provide documentDetails.
-
-DOCUMENT CREATION GUIDELINES:
-When creating documents, ensure they are:
-- PROFESSIONAL but SIMPLE - avoid unnecessary complexity
-- CLEAR and EASY TO UNDERSTAND - use plain language
-- WELL-STRUCTURED - organized with clear sections
-- PRACTICAL - focus on essential information only
-- USER-FRIENDLY - avoid jargon and overly technical terms
-- CLEAN FORMATTING - simple, readable layout
-- BUSINESS-APPROPRIATE - maintain professional standards without being overly formal
-
-EXAMPLES:
-- "What is GST?" → action: "chat", provide explanation based on knowledge
-- "Create a quotation" → action: "create_document", documentType: "quotation"
-- "How to calculate taxes?" → action: "chat", provide guidance based on knowledge
-- "Make an invoice for services" → action: "create_document", documentType: "invoice"
-- "What's the weather today?" → action: "chat", explain you don't have real-time weather data, suggest checking weather apps/websites
-- "Current stock price of Apple?" → action: "chat", explain you don't have real-time stock data, suggest checking financial websites
 `;
 
-    // Call AI
-    const result = await model.generateContent(aiPrompt);
-    const response = await result.response;
-    let text = response.text().trim();
+    // Prepare history for AIService
+    const apiHistory = conversationHistory?.map((msg: any) => ({
+      role: (msg.type === 'user' || msg.role === 'user') ? 'user' : 'assistant',
+      content: msg.content
+    })) || [];
 
-    // Clean up response
+    // Call AIService (handles all providers dynamically)
+    const response = await aiService.generateContent({
+      prompt: aiPrompt,
+      conversationHistory: apiHistory,
+      temperature: aiConfig.temperature || 0.7,
+      maxTokens: aiConfig.maxTokens || 8192
+    });
+
+    let text = response.content.trim();
+
+    // Clean up response if AI included markdown blocks
     if (text.startsWith('```json')) {
       text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     } else if (text.startsWith('```')) {
@@ -309,11 +288,19 @@ EXAMPLES:
     // Parse AI response
     let aiResponse;
     try {
+      // Find the first { and last } to extract JSON if there's surrounding text
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        text = text.substring(firstBrace, lastBrace + 1);
+      }
+      
       aiResponse = JSON.parse(text);
     } catch (parseError) {
+      console.error('❌ Failed to parse AI JSON response:', text);
       // Fallback response
       aiResponse = {
-        message: "I understand your request. Let me help you with that. Could you provide a bit more detail about what you need?",
+        message: text, // Use raw text if JSON parsing fails
         action: "chat",
         suggestions: [
           "Tell me more about your requirements",
@@ -324,18 +311,15 @@ EXAMPLES:
       };
     }
 
-
-
-    // Save conversation to persistent memory (don't await to avoid blocking response)
+    // Save conversation to persistent memory
     if (userId) {
-      saveToPersistentMemory(userId, userMessage, aiResponse.message).catch(() => {
-        // Silent fail - memory saving is not critical
-      });
+      saveToPersistentMemory(userId, userMessage, aiResponse.message, aiConfig.model).catch(() => {});
     }
 
     return aiResponse;
 
-  } catch (error) {
+  } catch (error: any) {
+    console.error('💥 AI dynamic chat error:', error);
     throw createError({
       statusCode: 500,
       statusMessage: `AI chat failed: ${error.message}`
