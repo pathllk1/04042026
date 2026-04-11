@@ -1,7 +1,34 @@
 import { ref } from 'vue';
-import type { Task, CreateTaskDto, UpdateTaskDto } from '~/server/models/Task';
 import useToast from '../ui/useToast';
 import useApiWithAuth from '../auth/useApiWithAuth';
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'completed';
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskDto {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+  status?: string;
+}
+
+export interface UpdateTaskDto {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+  status?: string;
+}
 
 export const useTasks = () => {
   const tasks = ref<Task[]>([]);

@@ -55,43 +55,48 @@ const wagesMenuItems = [
 ]
 
 // Event listeners for tool modals
+const handleKeyDown = (event) => {
+  // Ctrl + . (Control + Dot) to open Global Settings
+  if (event.ctrlKey && event.key === '.') {
+    event.preventDefault()
+    showSettingsModal.value = !showSettingsModal.value
+  }
+}
+
+const openCalculator = () => { showCalculatorModal.value = true }
+const openTranslator = () => { showTranslatorModal.value = true }
+const openWeather = () => { showWeatherModal.value = true }
+const openPdfTools = () => { showPdfToolsModal.value = true }
+const openTaskManager = () => { showTaskManagerModal.value = true }
+const openTodoList = () => { showTodoListModal.value = true }
+const openTextToImage = () => { showTextToImageModal.value = true }
+const openNotes = (event) => {
+  currentNote.value = event.detail?.note
+  showNotesModal.value = true
+}
+
 onMounted(() => {
-  window.addEventListener('open-calculator', () => {
-    showCalculatorModal.value = true
-  })
-  window.addEventListener('open-translator', () => {
-    showTranslatorModal.value = true
-  })
-  window.addEventListener('open-weather', () => {
-    showWeatherModal.value = true
-  })
-  window.addEventListener('open-pdf-tools', () => {
-    showPdfToolsModal.value = true
-  })
-  window.addEventListener('open-task-manager', () => {
-    showTaskManagerModal.value = true
-  })
-  window.addEventListener('open-todo-list', () => {
-    showTodoListModal.value = true
-  })
-  window.addEventListener('open-text-to-image', () => {
-    showTextToImageModal.value = true
-  })
-  window.addEventListener('open-notes', (event) => {
-    currentNote.value = event.detail?.note
-    showNotesModal.value = true
-  })
+  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('open-calculator', openCalculator)
+  window.addEventListener('open-translator', openTranslator)
+  window.addEventListener('open-weather', openWeather)
+  window.addEventListener('open-pdf-tools', openPdfTools)
+  window.addEventListener('open-task-manager', openTaskManager)
+  window.addEventListener('open-todo-list', openTodoList)
+  window.addEventListener('open-text-to-image', openTextToImage)
+  window.addEventListener('open-notes', openNotes)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('open-calculator', () => {})
-  window.removeEventListener('open-translator', () => {})
-  window.removeEventListener('open-weather', () => {})
-  window.removeEventListener('open-pdf-tools', () => {})
-  window.removeEventListener('open-task-manager', () => {})
-  window.removeEventListener('open-todo-list', () => {})
-  window.removeEventListener('open-text-to-image', () => {})
-  window.removeEventListener('open-notes', () => {})
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('open-calculator', openCalculator)
+  window.removeEventListener('open-translator', openTranslator)
+  window.removeEventListener('open-weather', openWeather)
+  window.removeEventListener('open-pdf-tools', openPdfTools)
+  window.removeEventListener('open-task-manager', openTaskManager)
+  window.removeEventListener('open-todo-list', openTodoList)
+  window.removeEventListener('open-text-to-image', openTextToImage)
+  window.removeEventListener('open-notes', openNotes)
 })
 </script>
 

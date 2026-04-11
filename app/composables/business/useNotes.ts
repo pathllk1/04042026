@@ -1,7 +1,25 @@
 import { ref } from 'vue';
-import type { Note, CreateNoteDto, UpdateNoteDto } from '~/server/models/Note';
 import useToast from '../ui/useToast';
 import useApiWithAuth from '../auth/useApiWithAuth';
+
+export interface Note {
+  id?: string;
+  title: string;
+  content: string;
+  userId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CreateNoteDto {
+  title: string;
+  content: string;
+}
+
+export interface UpdateNoteDto {
+  title?: string;
+  content?: string;
+}
 
 export const useNotes = () => {
   const notes = ref<Note[]>([]);

@@ -1,7 +1,28 @@
 import { ref } from 'vue';
-import type { Todo, CreateTodoDto, UpdateTodoDto } from '~/server/models/Todo';
 import useToast from '../ui/useToast';
 import useApiWithAuth from '../auth/useApiWithAuth';
+
+export interface Todo {
+  id: string;
+  content: string;
+  category: string;
+  completed: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTodoDto {
+  content: string;
+  category?: string;
+  completed?: boolean;
+}
+
+export interface UpdateTodoDto {
+  content?: string;
+  category?: string;
+  completed?: boolean;
+}
 
 export const useTodos = () => {
   const todos = ref<Todo[]>([]);
