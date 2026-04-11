@@ -94,17 +94,26 @@
       <!-- Main AI Chat Interface (Normal & Document modes) -->
       <div v-if="aiMode !== 'conversation'" class="bg-white rounded-lg shadow-xl">
         <!-- Chat Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg">
-          <h2 class="text-xl font-bold flex items-center">
-            <span class="mr-3">🤖</span>
-            AI Assistant
-            <span class="ml-3 text-xs bg-white/20 px-2 py-1 rounded-full">
-              🧠 Enhanced Memory
-            </span>
-          </h2>
-          <p class="mt-1 opacity-90 text-sm">
-            Ask me anything - I remember our conversations and learn from them!
-          </p>
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold flex items-center">
+              <span class="mr-3">🤖</span>
+              AI Assistant
+              <span class="ml-3 text-xs bg-white/20 px-2 py-1 rounded-full">
+                🧠 Enhanced Memory
+              </span>
+            </h2>
+            <p class="mt-1 opacity-90 text-sm">
+              Ask me anything - I remember our conversations and learn from them!
+            </p>
+          </div>
+          <button 
+            @click="window.dispatchEvent(new CustomEvent('open-news'))"
+            class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all flex items-center"
+          >
+            <span class="mr-1">📰</span>
+            Latest News
+          </button>
         </div>
 
         <!-- Chat Messages -->

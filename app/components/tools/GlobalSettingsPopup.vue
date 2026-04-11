@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-4xl lg:max-w-5xl h-[90vh]', overlay: { base: 'z-[100]' }, wrapper: 'z-[100]' }">
+  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-4xl lg:max-w-5xl h-[90vh]', overlay: { base: 'z-[1000]' }, wrapper: { base: 'z-[1000]' } }">
     <template #content>
       <UCard :ui="{ body: 'p-0 overflow-hidden', header: 'bg-indigo-50 dark:bg-indigo-950/20 p-4' }" class="h-full flex flex-col">
         <template #header>
@@ -526,6 +526,7 @@ const defaultSettings = {
     todoList: true,
     weather: true,
     translator: true,
+    news: true,
     notes: true,
     imageEditor: true
   }
@@ -616,6 +617,13 @@ const allTools = [
     description: 'Generate visuals from text prompts',
     uIcon: 'i-heroicons-photo',
     action: 'openTextToImage'
+  },
+  {
+    id: 'news',
+    name: 'Global News',
+    description: 'Latest headlines and RSS feeds',
+    uIcon: 'i-heroicons-newspaper',
+    action: 'openNews'
   },
   {
     id: 'notes',
@@ -748,6 +756,7 @@ const navigateTo = (pathOrAction) => {
     openTaskManager: 'open-task-manager',
     openTodoList: 'open-todo-list',
     openTextToImage: 'open-text-to-image',
+    openNews: 'open-news',
     openWeather: 'open-weather',
     openTranslator: 'open-translator',
     openChat: 'open-chat'
