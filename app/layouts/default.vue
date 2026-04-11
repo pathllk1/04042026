@@ -8,6 +8,7 @@ import PdfToolsModal from '~/components/tools/PdfToolsModal.vue'
 import TaskManagerModal from '~/components/tools/TaskManagerModal.vue'
 import TodoListModal from '~/components/tools/TodoListModal.vue'
 import TextToImageModal from '~/components/tools/TextToImageModal.vue'
+import NotesModal from '~/components/tools/NotesModal.vue'
 
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(true)
@@ -22,9 +23,19 @@ const showPdfToolsModal = ref(false)
 const showTaskManagerModal = ref(false)
 const showTodoListModal = ref(false)
 const showTextToImageModal = ref(false)
+const showNotesModal = ref(false)
+const currentNote = ref(undefined)
 
 const { user, isLoggedIn, logout } = useAuth()
 const route = useRoute()
+
+const handleNotesSubmit = async (data) => {
+  // Refresh notes list after submission
+  showNotesModal.value = false
+  currentNote.value = undefined
+  // Trigger a refresh event for NotesTab to fetch updated notes
+  window.dispatchEvent(new CustomEvent('notes-updated'))
+}
 
 const navigation = [
   { label: 'Home', to: '/', icon: 'i-heroicons-home' }
@@ -66,6 +77,10 @@ onMounted(() => {
   window.addEventListener('open-text-to-image', () => {
     showTextToImageModal.value = true
   })
+  window.addEventListener('open-notes', (event) => {
+    currentNote.value = event.detail?.note
+    showNotesModal.value = true
+  })
 })
 
 onUnmounted(() => {
@@ -76,6 +91,7 @@ onUnmounted(() => {
   window.removeEventListener('open-task-manager', () => {})
   window.removeEventListener('open-todo-list', () => {})
   window.removeEventListener('open-text-to-image', () => {})
+  window.removeEventListener('open-notes', () => {})
 })
 </script>
 
@@ -440,5 +456,13 @@ onUnmounted(() => {
   <TextToImageModal 
     :isOpen="showTextToImageModal"
     @close="showTextToImageModal = false"
+  />
+
+  <NotesModal 
+    :isOpen="showNotesModal"
+    :note="currentNote"
+    :isEditing="!!currentNote"
+    @close="showNotesModal = false"
+    @submit="handleNotesSubmit"
   />
 </template>

@@ -59,17 +59,6 @@
       </button>
     </div>
 
-    <!-- Note Modal -->
-    <Teleport to="body">
-      <div v-if="showNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[300] p-2 md:p-4 modal-wrapper">
-        <NoteForm
-          :note="currentNote"
-          :is-editing="!!currentNote"
-          @submit="handleSubmit"
-          @cancel="closeModal"
-        />
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -80,55 +69,33 @@ import type { Note } from '~/server/models/Note';
 import NoteContent from './NoteContent.vue';
 
 // State
-const showNoteModal = ref(false);
-const currentNote = ref<Note | undefined>();
 const { notes, isLoading, fetchNotes, createNote, updateNote, deleteNote } = useNotes();
 
 // Fetch notes on component mount
 onMounted(async () => {
   await fetchNotes();
+  
+  // Listen for notes update event from layout
+  window.addEventListener('notes-updated', async () => {
+    await fetchNotes();
+  });
 });
 
 // Actions
 const editNote = (note: Note) => {
-  currentNote.value = note;
-  showNoteModal.value = true;
-  // Add overflow hidden to body to prevent scrolling
-  if (typeof document !== 'undefined') {
-    document.body.style.overflow = 'hidden';
-  }
+  window.dispatchEvent(new CustomEvent('open-notes', { detail: { note } }));
 };
 
 const openNewNoteModal = () => {
-  currentNote.value = undefined;
-  showNoteModal.value = true;
-  // Add overflow hidden to body to prevent scrolling
-  if (typeof document !== 'undefined') {
-    document.body.style.overflow = 'hidden';
-  }
-};
-
-const closeModal = () => {
-  showNoteModal.value = false;
-  currentNote.value = undefined;
-
-  // Make sure body scrolling is enabled
-  if (typeof document !== 'undefined') {
-    // Remove overflow hidden from body
-    document.body.style.overflow = '';
-  }
+  window.dispatchEvent(new CustomEvent('open-notes', { detail: { note: undefined } }));
 };
 
 const handleSubmit = async (data: { title: string; content: string }) => {
   try {
-    if (currentNote.value) {
-      await updateNote(currentNote.value.id!, data);
-    } else {
-      await createNote(data);
-    }
-    closeModal();
+    // This will be called from the layout's NotesModal
+    // The modal will handle the submission
   } catch (error) {
-    // Silent error handling - UI feedback is provided by the composable
+    console.error('Error in notes submission:', error);
   }
 };
 
