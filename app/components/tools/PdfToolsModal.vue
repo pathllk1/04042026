@@ -1,5 +1,5 @@
 <template>
-  <UModal :open="isOpen" @update:open="emit('close')" :ui="{ content: 'max-w-5xl max-h-[90vh] overflow-hidden', overlay: { base: 'z-[99999]' }, wrapper: 'z-[99999]' }">
+  <UModal :open="isOpen" @update:open="emit('close')" :ui="{ content: 'max-w-5xl max-h-[90vh] overflow-hidden', overlay: { base: 'z-[99999]' }, wrapper: { base: 'z-[99999]' } }">
     <template #content>
       <div class="bg-white rounded-lg shadow-xl w-full h-full overflow-hidden flex flex-col">
       <!-- Header -->

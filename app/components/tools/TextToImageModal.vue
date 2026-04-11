@@ -5,7 +5,7 @@
     :ui="{
       content: 'max-w-4xl max-h-[90vh] overflow-hidden',
       overlay: { base: 'z-[99999]' },
-      wrapper: 'z-[99999]'
+      wrapper: { base: 'z-[99999]' }
     }"
   >
     <template #content>

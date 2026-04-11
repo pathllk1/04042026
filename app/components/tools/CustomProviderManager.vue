@@ -100,7 +100,7 @@
     </div>
 
     <!-- Add/Edit Provider Modal -->
-    <UModal :open="showAddProvider || !!editingProvider" @update:open="cancelEdit" :ui="{ content: 'max-w-2xl p-6', overlay: { base: 'z-[99999]' }, wrapper: 'z-[99999]' }">
+    <UModal :open="showAddProvider || !!editingProvider" @update:open="cancelEdit" :ui="{ content: 'max-w-2xl p-6', overlay: { base: 'z-[99999]' }, wrapper: { base: 'z-[99999]' } }">
       <template #content>
         <div class="relative">
           <h3 class="text-lg font-medium text-gray-900 mb-4">

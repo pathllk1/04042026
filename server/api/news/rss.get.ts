@@ -33,6 +33,13 @@ export default defineEventHandler(async (event) => {
     // Ensure items is an array
     const newsItems = Array.isArray(items) ? items : [items];
 
+    // Sort by date descending
+    newsItems.sort((a: any, b: any) => {
+      const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+      const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+      return dateB - dateA;
+    });
+
     return {
       success: true,
       topic,

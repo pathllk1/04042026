@@ -106,7 +106,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UApp class="min-h-screen flex flex-col relative">
+  <div class="min-h-screen flex flex-col relative">
     <!-- HEADER -->
     <UHeader 
       class="h-16 sticky top-0 z-50 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur"
@@ -507,5 +507,5 @@ onUnmounted(() => {
       @close="showNotesModal = false"
       @submit="handleNotesSubmit"
     />
-  </UApp>
+  </div>
 </template>

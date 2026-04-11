@@ -5,7 +5,7 @@
     :ui="{
       content: 'max-w-4xl max-h-[90vh] overflow-hidden',
       overlay: { base: 'z-[99999]' },
-      wrapper: 'z-[99999]'
+      wrapper: { base: 'z-[99999]' }
     }"
   >
     <template #content>
@@ -70,7 +70,7 @@
                 <a :href="item.link" target="_blank" class="hover:underline">{{ item.title }}</a>
               </h3>
               
-              <div class="text-xs text-gray-600 line-clamp-2 leading-relaxed" v-html="item.description"></div>
+              <div class="text-xs text-gray-600 line-clamp-4 leading-relaxed news-description" v-html="item.description"></div>
               
               <div class="mt-4 flex items-center justify-end">
                 <a 
@@ -178,5 +178,11 @@ watch(activeTopic, () => {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Clean up Google News RSS HTML description */
+.news-description :deep(ul), 
+.news-description :deep(ol) {
+  display: none;
 }
 </style>
