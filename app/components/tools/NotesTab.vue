@@ -73,11 +73,19 @@ const { notes, isLoading, fetchNotes, createNote, updateNote, deleteNote } = use
 
 // Fetch notes on component mount
 onMounted(async () => {
-  await fetchNotes();
+  try {
+    await fetchNotes();
+  } catch (error) {
+    console.error('Failed to initial fetch notes:', error);
+  }
   
   // Listen for notes update event from layout
   window.addEventListener('notes-updated', async () => {
-    await fetchNotes();
+    try {
+      await fetchNotes();
+    } catch (error) {
+      console.error('Failed to fetch notes on update:', error);
+    }
   });
 });
 

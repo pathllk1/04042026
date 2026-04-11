@@ -1,8 +1,7 @@
-import { getFirestore } from 'firebase-admin/firestore';
-import type { UpdateNoteDto, Note } from '../../models/Note';
+import NoteModel from '../../models/Note';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import { createError, readBody } from 'h3';
+import { createError, readBody, defineEventHandler } from 'h3';
 
 // Create a DOMPurify instance for server-side sanitization
 const window = new JSDOM('').window;
@@ -81,101 +80,98 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = getFirestore();
-  const noteRef = db.collection('notes').doc(id);
-
   // GET - Get a specific note
   if (event.method === 'GET') {
-    const doc = await noteRef.get();
-    if (!doc.exists) {
+    try {
+      const note = await NoteModel.findOne({ _id: id, userId });
+      if (!note) {
+        throw createError({
+          statusCode: 404,
+          message: 'Note not found'
+        });
+      }
+
+      return {
+        id: note._id,
+        title: note.title,
+        content: note.content,
+        userId: note.userId,
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt
+      };
+    } catch (error: any) {
       throw createError({
-        statusCode: 404,
-        message: 'Note not found'
+        statusCode: error.statusCode || 500,
+        message: error.message || 'Failed to fetch note'
       });
     }
-
-    const note = doc.data() as Note;
-    if (note.userId !== userId) {
-      throw createError({
-        statusCode: 403,
-        message: 'Access denied'
-      });
-    }
-
-    return {
-      id: doc.id,
-      ...note
-    };
   }
 
   // PUT - Update a note
   if (event.method === 'PUT') {
-    const doc = await noteRef.get();
-    if (!doc.exists) {
+    try {
+      const body = await readBody(event);
+      const { title, content } = body;
+
+      // Sanitize user input
+      const updateData: any = {};
+      if (title) updateData.title = sanitizeText(title);
+      if (content) updateData.content = sanitizeHtml(content);
+
+      const updatedNote = await NoteModel.findOneAndUpdate(
+        { _id: id, userId },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedNote) {
+        throw createError({
+          statusCode: 404,
+          message: 'Note not found or unauthorized'
+        });
+      }
+
+      return {
+        id: updatedNote._id,
+        title: updatedNote.title,
+        content: updatedNote.content,
+        userId: updatedNote.userId,
+        createdAt: updatedNote.createdAt,
+        updatedAt: updatedNote.updatedAt
+      };
+    } catch (error: any) {
       throw createError({
-        statusCode: 404,
-        message: 'Note not found'
+        statusCode: error.statusCode || 500,
+        message: error.message || 'Failed to update note'
       });
     }
-
-    const existingNote = doc.data() as Note;
-    if (existingNote.userId !== userId) {
-      throw createError({
-        statusCode: 403,
-        message: 'Access denied'
-      });
-    }
-
-    const body = await readBody(event);
-
-    console.log('Received update data:', {
-      keys: Object.keys(body),
-      hasTitle: !!body.title,
-      hasContent: !!body.content
-    });
-
-    // Extract title and content, ignoring CSRF token and other fields
-    const { title, content } = body;
-
-    // Sanitize user input
-    const sanitizedTitle = title ? sanitizeText(title) : undefined;
-    const sanitizedContent = content ? sanitizeHtml(content) : undefined;
-
-    const updateData: Partial<Note> = {
-      ...(sanitizedTitle && { title: sanitizedTitle }),
-      ...(sanitizedContent && { content: sanitizedContent }),
-      updatedAt: new Date()
-    };
-
-    await noteRef.update(updateData);
-
-    return {
-      message: 'Note updated successfully'
-    };
   }
 
   // DELETE - Delete a note
   if (event.method === 'DELETE') {
-    const doc = await noteRef.get();
-    if (!doc.exists) {
+    try {
+      const result = await NoteModel.deleteOne({ _id: id, userId });
+      
+      if (result.deletedCount === 0) {
+        throw createError({
+          statusCode: 404,
+          message: 'Note not found or unauthorized'
+        });
+      }
+
+      return {
+        message: 'Note deleted successfully'
+      };
+    } catch (error: any) {
       throw createError({
-        statusCode: 404,
-        message: 'Note not found'
+        statusCode: error.statusCode || 500,
+        message: error.message || 'Failed to delete note'
       });
     }
-
-    const note = doc.data() as Note;
-    if (note.userId !== userId) {
-      throw createError({
-        statusCode: 403,
-        message: 'Access denied'
-      });
-    }
-
-    await noteRef.delete();
-
-    return {
-      message: 'Note deleted successfully'
-    };
   }
+
+  throw createError({
+    statusCode: 405,
+    message: 'Method not allowed'
+  });
 });

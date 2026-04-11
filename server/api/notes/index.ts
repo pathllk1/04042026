@@ -1,8 +1,7 @@
-import { getFirestore } from 'firebase-admin/firestore';
-import type { CreateNoteDto, Note } from '../../models/Note';
+import NoteModel from '../../models/Note';
 import DOMPurify from 'dompurify';
 import { JSDOM } from 'jsdom';
-import { createError } from 'h3';
+import { createError, readBody, defineEventHandler } from 'h3';
 
 // Create a DOMPurify instance for server-side sanitization
 const window = new JSDOM('').window;
@@ -73,21 +72,24 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const db = getFirestore();
-
   // GET - List all notes for the user
   if (event.method === 'GET') {
-    const notesRef = db.collection('notes');
-    const snapshot = await notesRef.where('userId', '==', userId).get();
-
-    if (snapshot.empty) {
-      return [];
+    try {
+      const notes = await NoteModel.find({ userId }).sort({ updatedAt: -1 });
+      return notes.map(note => ({
+        id: note._id,
+        title: note.title,
+        content: note.content,
+        userId: note.userId,
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt
+      }));
+    } catch (error: any) {
+      throw createError({
+        statusCode: 500,
+        message: error.message || 'Failed to fetch notes'
+      });
     }
-
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
   }
 
   // POST - Create a new note
@@ -95,21 +97,10 @@ export default defineEventHandler(async (event) => {
     try {
       const body = await readBody(event);
 
-      console.log('Received note data:', {
-        title: body.title,
-        contentLength: body.content ? body.content.length : 0,
-        keys: Object.keys(body)
-      });
-
       // Extract title and content, ignoring CSRF token and other fields
       const { title, content } = body;
 
       if (!title || !content) {
-        console.error('Missing required fields:', {
-          hasTitle: !!title,
-          hasContent: !!content,
-          bodyKeys: Object.keys(body)
-        });
         throw createError({
           statusCode: 400,
           message: 'Title and content are required'
@@ -120,26 +111,25 @@ export default defineEventHandler(async (event) => {
       const sanitizedTitle = sanitizeText(title);
       const sanitizedContent = sanitizeHtml(content);
 
-      const note: Note = {
+      const newNote = await NoteModel.create({
         title: sanitizedTitle,
         content: sanitizedContent,
-        userId: userId,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        userId: userId
+      });
+
+      return {
+        id: newNote._id,
+        title: newNote.title,
+        content: newNote.content,
+        userId: newNote.userId,
+        createdAt: newNote.createdAt,
+        updatedAt: newNote.updatedAt
       };
-
-      const docRef = await db.collection('notes').add(note);
-      const newNote = await docRef.get();
-
-      const noteData = newNote.data();
-      const response = {
-        id: docRef.id,
-        ...noteData
-      };
-
-      return response;
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw createError({
+        statusCode: error.statusCode || 500,
+        message: error.message || 'Failed to create note'
+      });
     }
   }
 

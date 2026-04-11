@@ -63,6 +63,7 @@
 import { ref, watch } from 'vue';
 import { useNotes } from '~/composables/business/useNotes';
 import type { Note } from '~/server/models/Note';
+import CustomTextEditor from './CustomTextEditor.vue';
 
 const props = defineProps<{
   isOpen: boolean;

@@ -6,6 +6,7 @@ import '../models/User';
 import '../models/Firm';
 import '../models/Role';
 import '../models/Document';
+import '../models/Note';
 import '../models/AIHistory';
 import { NSE } from '../models/NSE';
 import { Folio } from '../models/Folio';
