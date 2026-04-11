@@ -65,8 +65,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useNotes } from '~/composables/business/useNotes';
-import type { Note } from '~/server/models/Note';
 import NoteContent from './NoteContent.vue';
+
+interface Note {
+  id?: string;
+  title: string;
+  content: string;
+  userId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 // State
 const { notes, isLoading, fetchNotes, createNote, updateNote, deleteNote } = useNotes();

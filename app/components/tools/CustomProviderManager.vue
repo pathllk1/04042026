@@ -100,9 +100,9 @@
     </div>
 
     <!-- Add/Edit Provider Modal -->
-    <div v-if="showAddProvider || editingProvider" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
+    <UModal :open="showAddProvider || !!editingProvider" @update:open="cancelEdit" :ui="{ content: 'max-w-2xl p-6', overlay: { base: 'z-[99999]' }, wrapper: 'z-[99999]' }">
+      <template #content>
+        <div class="relative">
           <h3 class="text-lg font-medium text-gray-900 mb-4">
             {{ editingProvider ? 'Edit Custom Provider' : 'Add Custom Provider' }}
           </h3>
@@ -246,8 +246,8 @@
             </div>
           </form>
         </div>
-      </div>
-    </div>
+      </template>
+    </UModal>
   </div>
 </template>
 

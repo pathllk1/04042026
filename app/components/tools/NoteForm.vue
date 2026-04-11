@@ -78,8 +78,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import type { Note } from '~/server/models/Note';
 import CustomTextEditor from './CustomTextEditor.vue';
+
+interface Note {
+  id?: string;
+  title: string;
+  content: string;
+  userId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 const props = defineProps<{
   note?: Note;

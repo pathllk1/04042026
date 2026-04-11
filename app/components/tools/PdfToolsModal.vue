@@ -1,8 +1,9 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[300]" @click.self="closeModal">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+  <UModal :open="isOpen" @update:open="emit('close')" :ui="{ content: 'max-w-5xl max-h-[90vh] overflow-hidden', overlay: { base: 'z-[99999]' }, wrapper: 'z-[99999]' }">
+    <template #content>
+      <div class="bg-white rounded-lg shadow-xl w-full h-full overflow-hidden flex flex-col">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 flex justify-between items-center">
+      <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-3">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -703,7 +704,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup>

@@ -1,7 +1,8 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[300] transition-opacity duration-300 ease-in-out">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto transform transition-transform duration-300 ease-in-out scale-100">
-      <button @click="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 transition-colors duration-200">
+  <UModal :open="isOpen" @update:open="emit('close')" :ui="{ content: 'max-w-2xl p-6', overlay: { base: 'z-[99999]' }, wrapper: 'z-[99999]' }">
+    <template #content>
+      <div class="relative">
+      <button @click="closeModal" class="absolute -top-2 -right-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-10">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -775,11 +776,12 @@
         </div>
       </div>
     </div>
-  </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 const props = defineProps({
   isOpen: Boolean

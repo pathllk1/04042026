@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-4xl lg:max-w-5xl h-[90vh]' }">
+  <UModal v-model:open="isOpen" :ui="{ content: 'max-w-4xl lg:max-w-5xl h-[90vh]', overlay: { base: 'z-[100]' }, wrapper: 'z-[100]' }">
     <template #content>
       <UCard :ui="{ body: 'p-0 overflow-hidden', header: 'bg-indigo-50 dark:bg-indigo-950/20 p-4' }" class="h-full flex flex-col">
         <template #header>
