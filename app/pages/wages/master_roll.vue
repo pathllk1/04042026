@@ -147,49 +147,61 @@
           </thead>
 
           <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            <tr
-              v-for="(employee, index) in paginatedEmployees"
-              :key="employee._id"
-              class="hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
-            >
-              <td class="px-3 py-3 text-center text-sm font-medium text-gray-500">{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ employee.employeeName }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.fatherHusbandName }}</td>
-              <td
-                class="px-4 py-3 whitespace-nowrap text-sm"
-                :class="!isValidPhoneNumber(employee.phoneNo) && employee.phoneNo ? 'text-red-600 font-semibold' : 'text-gray-700 dark:text-gray-300'"
-              >
-                {{ employee.phoneNo }}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ formatDate(employee.dateOfJoining) }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <UBadge :color="statusColor(employee.status)" variant="soft" size="sm">
-                  {{ employee.status || 'Active' }}
-                </UBadge>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.category }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.project || '—' }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.site || '—' }}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <UButton
-                  variant="ghost"
-                  size="xs"
-                  icon="i-lucide-pencil"
-                  color="primary"
-                  @click="editEmployee(employee)"
-                >
-                  Edit
-                </UButton>
+            <!-- Loading state -->
+            <tr v-if="isLoading">
+              <td colspan="10" class="px-4 py-20 text-center">
+                <div class="flex flex-col items-center justify-center gap-3">
+                  <UIcon name="i-lucide-loader-2" class="h-10 w-10 text-primary-500 animate-spin" />
+                  <p class="text-sm text-gray-500 font-medium">Fetching employees data…</p>
+                </div>
               </td>
             </tr>
 
-            <!-- Empty state -->
-            <tr v-if="filteredEmployees.length === 0">
-              <td colspan="10" class="px-4 py-12 text-center text-sm text-gray-400">
-                <UIcon name="i-lucide-users" class="h-8 w-8 mx-auto mb-2 opacity-40" />
-                No employees found.
-              </td>
-            </tr>
+            <template v-else>
+              <tr
+                v-for="(employee, index) in paginatedEmployees"
+                :key="employee._id"
+                class="hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
+              >
+                <td class="px-3 py-3 text-center text-sm font-medium text-gray-500">{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ employee.employeeName }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.fatherHusbandName }}</td>
+                <td
+                  class="px-4 py-3 whitespace-nowrap text-sm"
+                  :class="!isValidPhoneNumber(employee.phoneNo) && employee.phoneNo ? 'text-red-600 font-semibold' : 'text-gray-700 dark:text-gray-300'"
+                >
+                  {{ employee.phoneNo }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ formatDate(employee.dateOfJoining) }}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <UBadge :color="statusColor(employee.status)" variant="soft" size="sm">
+                    {{ employee.status || 'Active' }}
+                  </UBadge>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.category }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.project || '—' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ employee.site || '—' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <UButton
+                    variant="ghost"
+                    size="xs"
+                    icon="i-lucide-pencil"
+                    color="primary"
+                    @click="editEmployee(employee)"
+                  >
+                    Edit
+                  </UButton>
+                </td>
+              </tr>
+
+              <!-- Empty state -->
+              <tr v-if="filteredEmployees.length === 0">
+                <td colspan="10" class="px-4 py-12 text-center text-sm text-gray-400">
+                  <UIcon name="i-lucide-users" class="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  No employees found.
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -240,63 +252,73 @@
 
     <!-- ── Mobile Card View ─────────────────────────────────────────── -->
     <div class="md:hidden space-y-3">
-      <div
-        v-for="(employee, index) in paginatedEmployees"
-        :key="employee._id"
-        class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
-      >
-        <div class="flex justify-between items-start mb-3">
-          <div>
-            <UBadge color="info" variant="soft" size="xs" class="mb-1">#{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</UBadge>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ employee.employeeName }}</h3>
-          </div>
-          <UButton size="xs" variant="ghost" icon="i-lucide-pencil" @click="editEmployee(employee)">
-            Edit
-          </UButton>
-        </div>
-        <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
-          <div><span class="text-gray-400">Father/Husband: </span>{{ employee.fatherHusbandName }}</div>
-          <div>
-            <span class="text-gray-400">Phone: </span>
-            <span :class="!isValidPhoneNumber(employee.phoneNo) && employee.phoneNo ? 'text-red-600 font-semibold' : ''">
-              {{ employee.phoneNo }}
-            </span>
-          </div>
-          <div><span class="text-gray-400">Joined: </span>{{ formatDate(employee.dateOfJoining) }}</div>
-          <div class="flex items-center gap-1">
-            <span class="text-gray-400">Status: </span>
-            <UBadge :color="statusColor(employee.status)" variant="soft" size="xs">{{ employee.status || 'Active' }}</UBadge>
-          </div>
-          <div><span class="text-gray-400">Category: </span>{{ employee.category }}</div>
-          <div><span class="text-gray-400">Project: </span>{{ employee.project || '—' }}</div>
-          <div><span class="text-gray-400">Site: </span>{{ employee.site || '—' }}</div>
+      <!-- Mobile Loading state -->
+      <div v-if="isLoading" class="py-20 text-center">
+        <div class="flex flex-col items-center justify-center gap-3">
+          <UIcon name="i-lucide-loader-2" class="h-10 w-10 text-primary-500 animate-spin" />
+          <p class="text-sm text-gray-500 font-medium">Fetching employees data…</p>
         </div>
       </div>
 
-      <div v-if="filteredEmployees.length === 0" class="text-center text-gray-400 py-12 text-sm">
-        No employees found.
-      </div>
+      <template v-else>
+        <div
+          v-for="(employee, index) in paginatedEmployees"
+          :key="employee._id"
+          class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
+        >
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <UBadge color="info" variant="soft" size="xs" class="mb-1">#{{ (currentPage - 1) * (pageSize === 'all' ? 0 : Number(pageSize)) + index + 1 }}</UBadge>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ employee.employeeName }}</h3>
+            </div>
+            <UButton size="xs" variant="ghost" icon="i-lucide-pencil" @click="editEmployee(employee)">
+              Edit
+            </UButton>
+          </div>
+          <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <div><span class="text-gray-400">Father/Husband: </span>{{ employee.fatherHusbandName }}</div>
+            <div>
+              <span class="text-gray-400">Phone: </span>
+              <span :class="!isValidPhoneNumber(employee.phoneNo) && employee.phoneNo ? 'text-red-600 font-semibold' : ''">
+                {{ employee.phoneNo }}
+              </span>
+            </div>
+            <div><span class="text-gray-400">Joined: </span>{{ formatDate(employee.dateOfJoining) }}</div>
+            <div class="flex items-center gap-1">
+              <span class="text-gray-400">Status: </span>
+              <UBadge :color="statusColor(employee.status)" variant="soft" size="xs">{{ employee.status || 'Active' }}</UBadge>
+            </div>
+            <div><span class="text-gray-400">Category: </span>{{ employee.category }}</div>
+            <div><span class="text-gray-400">Project: </span>{{ employee.project || '—' }}</div>
+            <div><span class="text-gray-400">Site: </span>{{ employee.site || '—' }}</div>
+          </div>
+        </div>
 
-      <!-- Mobile Pagination -->
-      <div v-if="totalPages > 1" class="flex justify-center gap-4 py-4">
-        <UButton
-          icon="i-lucide-chevron-left"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          :disabled="currentPage === 1"
-          @click="currentPage--"
-        />
-        <span class="text-sm self-center">{{ currentPage }} / {{ totalPages }}</span>
-        <UButton
-          icon="i-lucide-chevron-right"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          :disabled="currentPage === totalPages"
-          @click="currentPage++"
-        />
-      </div>
+        <div v-if="filteredEmployees.length === 0" class="text-center text-gray-400 py-12 text-sm">
+          No employees found.
+        </div>
+
+        <!-- Mobile Pagination -->
+        <div v-if="totalPages > 1" class="flex justify-center gap-4 py-4">
+          <UButton
+            icon="i-lucide-chevron-left"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+          />
+          <span class="text-sm self-center">{{ currentPage }} / {{ totalPages }}</span>
+          <UButton
+            icon="i-lucide-chevron-right"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════ -->
@@ -789,6 +811,7 @@ const tableColumns: { key: FilterKey; label: string }[] = [
 
 // ─── Reactive state ───────────────────────────────────────────────────────────
 const employees       = ref<Employee[]>([])
+const isLoading       = ref(false)
 const showEditModal   = ref(false)
 const showAddModal    = ref(false)
 const showExportModal = ref(false)
@@ -1033,6 +1056,7 @@ watch(searchTerm, () => {
 
 // ─── API functions ────────────────────────────────────────────────────────────
 const fetchEmployees = async () => {
+  isLoading.value = true
   try {
     const response = await api.get('/api/master-roll')
     console.log('API Response (/api/master-roll):', response)
@@ -1041,6 +1065,8 @@ const fetchEmployees = async () => {
   } catch (error) {
     console.error('Error fetching employees:', error)
     notify('Failed to load employees. Please refresh the page.', 'error')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -1055,9 +1081,7 @@ const updateEmployee = async () => {
   try {
     await api.put(`/api/master-roll/${editingEmployee._id}`, editingEmployee)
     showEditModal.value = false
-    const response = await api.get('/api/master-roll')
-    employees.value = response.employees as Employee[]
-    updateFilterOptions()
+    await fetchEmployees()
     notify('Employee updated successfully')
   } catch (error) {
     console.error('Error updating employee:', error)
@@ -1069,9 +1093,7 @@ const deleteEmployee = async (id: string) => {
   if (!confirm('Are you sure you want to delete this employee?')) return
   try {
     await api.delete(`/api/master-roll/${id}`)
-    const response = await api.get('/api/master-roll')
-    employees.value = response.employees as Employee[]
-    updateFilterOptions()
+    await fetchEmployees()
   } catch (error) {
     console.error('Error deleting employee:', error)
     notify('Failed to delete employee', 'error')
