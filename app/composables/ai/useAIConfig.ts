@@ -93,9 +93,44 @@ export const useAIConfig = () => {
 
       const savedUsage = localStorage.getItem<AIUsageStats[]>(AI_USAGE_KEY, [])
       usageStats.value = savedUsage
+
+      // Clean up configuration to ensure it matches current model constraints
+      cleanupConfig()
     } catch (err) {
       console.error('Error loading AI configuration:', err)
       error.value = 'Failed to load AI configuration'
+    }
+  }
+
+  /**
+   * Reconcile current configuration with model-specific constraints
+   * Particularly important for Groq TPM limits
+   */
+  const cleanupConfig = () => {
+    const model = currentModel.value
+    if (!model) return
+
+    let changed = false
+    
+    // Ensure maxTokens doesn't exceed model context window
+    if (aiConfigExtended.value.maxTokens && aiConfigExtended.value.maxTokens > model.maxTokens) {
+      console.log(`🧹 Capping maxTokens to ${model.maxTokens} for model ${model.id}`)
+      aiConfigExtended.value.maxTokens = model.maxTokens
+      changed = true
+    }
+
+    // For Groq specifically, ensure we're using defaultMaxTokens if current setting is high
+    // (This fixes the 413 error for users with stale 8192 setting)
+    if (aiConfigExtended.value.currentProvider === 'groq' && model.defaultMaxTokens) {
+      if (!aiConfigExtended.value.maxTokens || aiConfigExtended.value.maxTokens > 4096) {
+        console.log(`🧹 Adjusting Groq maxTokens to ${model.defaultMaxTokens} to avoid TPM limits`)
+        aiConfigExtended.value.maxTokens = model.defaultMaxTokens
+        changed = true
+      }
+    }
+
+    if (changed) {
+      saveConfig()
     }
   }
 
@@ -250,7 +285,10 @@ export const useAIConfig = () => {
         console.log('📋 Restored model settings:', savedSettings)
       } else {
         // Update max tokens based on model capabilities
-        aiConfigExtended.value.maxTokens = Math.min(aiConfigExtended.value.maxTokens || 8192, model.maxTokens)
+        // Use defaultMaxTokens if available, otherwise fallback to 8192 capped by model's maxTokens
+        const targetDefault = model.defaultMaxTokens || 8192
+        aiConfigExtended.value.maxTokens = Math.min(targetDefault, model.maxTokens)
+        console.log(`📋 Set default maxTokens to ${aiConfigExtended.value.maxTokens} for model ${modelId}`)
       }
 
       // Save this model as the preferred model for current provider
@@ -268,7 +306,11 @@ export const useAIConfig = () => {
     }
   }
 
-  const updateApiKey = (apiKey: string) => {
+  const updateApiKey = (apiKey: any) => {
+    if (typeof apiKey !== 'string') {
+      console.warn('⚠️ updateApiKey called with non-string value:', apiKey)
+      return
+    }
     const trimmedKey = apiKey.trim()
     const modelId = getCurrentModelId()
 
@@ -791,7 +833,7 @@ export const useAIConfig = () => {
   return {
     // State
     aiConfig: readonly(aiConfig),
-    aiConfigExtended: readonly(aiConfigExtended),
+    aiConfigExtended,
     usageStats: readonly(usageStats),
     isLoading: readonly(isLoading),
     error: readonly(error),

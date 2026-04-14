@@ -15,10 +15,11 @@
         >
           <div class="flex items-start">
             <div class="mt-1">
-              <URadio 
+              <input 
+                type="radio"
                 v-model="selectedEditType" 
                 value="individual"
-                color="info"
+                class="w-4 h-4 text-blue-600 cursor-pointer"
               />
             </div>
             <div class="ml-4 flex-1">
@@ -59,10 +60,11 @@
         >
           <div class="flex items-start">
             <div class="mt-1">
-              <URadio 
+              <input 
+                type="radio"
                 v-model="selectedEditType" 
                 value="bulk"
-                color="success"
+                class="w-4 h-4 text-green-600 cursor-pointer"
               />
             </div>
             <div class="ml-4 flex-1">
@@ -103,10 +105,11 @@
         >
           <div class="flex items-start">
             <div class="mt-1">
-              <URadio 
+              <input 
+                type="radio"
                 v-model="selectedEditType" 
                 value="mixed"
-                color="secondary"
+                class="w-4 h-4 text-purple-600 cursor-pointer"
               />
             </div>
             <div class="ml-4 flex-1">

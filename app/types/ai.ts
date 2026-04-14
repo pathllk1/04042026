@@ -27,7 +27,8 @@ export interface AIModel {
   id: string
   name: string
   description: string
-  maxTokens: number
+  maxTokens: number // Full context window
+  defaultMaxTokens?: number // Recommended default for requests (e.g. due to TPM limits)
   costPer1kTokens?: {
     input: number
     output: number
@@ -303,6 +304,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'GPT-OSS 120B',
         description: 'Flagship reasoning open-weight model',
         maxTokens: 131072,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.50, output: 0.75 }
       },
       {
@@ -310,6 +312,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'Llama 4 Scout 17B',
         description: 'Ultra-efficient 2026 Llama model',
         maxTokens: 131072,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.10, output: 0.15 }
       },
       {
@@ -317,6 +320,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'Llama 3.3 70B Versatile',
         description: 'Powerful general purpose Llama model',
         maxTokens: 128000,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.59, output: 0.79 }
       },
       {
@@ -324,6 +328,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'Qwen 3 32B',
         description: 'Alibaba\'s latest 2026 multilingual model',
         maxTokens: 131072,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.29, output: 0.59 }
       },
       {
@@ -331,6 +336,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'DeepSeek R1 Distill Llama 70B',
         description: 'Advanced reasoning model on Groq hardware',
         maxTokens: 128000,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.75, output: 0.99 }
       },
       {
@@ -338,6 +344,7 @@ export const AI_PROVIDERS: AIProvider[] = [
         name: 'Mistral Saba 24B',
         description: 'Mistral\'s latest high-efficiency model',
         maxTokens: 32768,
+        defaultMaxTokens: 4096,
         costPer1kTokens: { input: 0.79, output: 0.79 }
       }
     ]

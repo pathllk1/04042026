@@ -215,6 +215,7 @@ onUnmounted(() => {
           icon="i-simple-icons-github"
           color="neutral"
           variant="ghost"
+          class="hidden sm:inline-flex"
         />
       </template>
     </UHeader>

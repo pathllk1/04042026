@@ -318,10 +318,59 @@
                           </div>
                         </UFormField>
                       </div>
+
+                      <ClientOnly>
+                        <div v-if="currentModel" class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
+                          <div class="flex items-center justify-between">
+                            <h5 class="text-xs font-bold uppercase tracking-wider text-gray-500">Model Advanced Settings</h5>
+                            <UBadge variant="subtle" size="xs" color="indigo">{{ currentModel.name }}</UBadge>
+                          </div>
+                          
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <UFormField label="Temperature" :help="`Current: ${aiConfig.temperature || 0.7}`">
+                              <USlider
+                                v-model="aiConfigExtended.temperature"
+                                :min="0"
+                                :max="1"
+                                :step="0.1"
+                                size="sm"
+                                color="indigo"
+                              />
+                              <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                                <span>Precise (0)</span>
+                                <span>Creative (1)</span>
+                              </div>
+                            </UFormField>
+
+                            <UFormField label="Max Tokens" :help="`Output limit: ${aiConfig.maxTokens || 4096}`">
+                              <UInput
+                                v-model="aiConfigExtended.maxTokens"
+                                type="number"
+                                size="sm"
+                                :min="1"
+                                :max="currentModel.maxTokens"
+                                icon="i-heroicons-chat-bubble-bottom-center-text"
+                              />
+                              <div class="text-[10px] text-gray-400 mt-1">
+                                Max allowed: {{ currentModel.maxTokens }}
+                              </div>
+                            </UFormField>
+                          </div>
+                          
+                          <div v-if="aiConfig.provider === 'groq' && (aiConfig.maxTokens || 0) > 4000" class="p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 flex gap-2 items-start">
+                            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-amber-500 mt-0.5" />
+                            <p class="text-[10px] text-amber-700 dark:text-amber-400">
+                              <strong>Note:</strong> Groq has strict TPM limits. Setting Max Tokens above 4000 may cause "Content Too Large" errors on some models.
+                            </p>
+                          </div>
+                        </div>
+                      </ClientOnly>
                     </UCard>
 
-                    <CustomProviderManager />
-                    <AIUsageMonitor v-if="isConfigured" />
+                    <ClientOnly>
+                      <CustomProviderManager />
+                      <AIUsageMonitor v-if="isConfigured" />
+                    </ClientOnly>
                   </div>
                   <div v-else class="h-64 flex flex-col items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-900/40 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-800">
                     <UIcon name="i-heroicons-arrow-left-circle" class="w-12 h-12 mb-2" />
@@ -471,6 +520,18 @@ const {
   exportToFile,
   importFromFile
 } = useAIConfig();
+
+// Extended AI config for advanced settings
+const aiConfigExtended = computed({
+  get: () => ({
+    temperature: aiConfig.value?.temperature || 0.7,
+    maxTokens: aiConfig.value?.maxTokens || 4096
+  }),
+  set: (val) => {
+    if (val.temperature !== undefined) aiConfig.value.temperature = val.temperature;
+    if (val.maxTokens !== undefined) aiConfig.value.maxTokens = val.maxTokens;
+  }
+});
 
 const {
   exportToFile: exportUserDataToFile,
@@ -676,7 +737,9 @@ const handleModelChange = (modelId) => {
   apiKeyValid.value = !!savedKey;
 };
 
-const handleApiKeyChange = (val) => {
+const handleApiKeyChange = (event) => {
+  const val = typeof event === 'string' ? event : event?.target?.value;
+  if (typeof val !== 'string') return;
   tempApiKey.value = val;
   updateApiKey(val);
   apiKeyValid.value = false;

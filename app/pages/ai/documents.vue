@@ -1,6 +1,7 @@
 <template>
   <UContainer class="py-6 max-w-7xl">
-    <!-- Page Header -->
+    <ClientOnly>
+      <!-- Page Header -->
     <div class="text-center mb-8">
       <h1 class="text-4xl font-extrabold flex items-center justify-center gap-3">
         <span class="text-primary-500 text-5xl">🤖</span>
@@ -30,7 +31,12 @@
           :ui="{ body: { padding: 'p-4' } }"
         >
           <div class="flex items-start gap-4">
-            <URadio v-model="aiMode" value="normal" color="blue" />
+            <input 
+              type="radio"
+              v-model="aiMode" 
+              value="normal"
+              class="w-4 h-4 text-blue-600 mt-1 cursor-pointer"
+            />
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-2xl">💬</span>
@@ -51,7 +57,12 @@
           :ui="{ body: { padding: 'p-4' } }"
         >
           <div class="flex items-start gap-4">
-            <URadio v-model="aiMode" value="document" color="green" />
+            <input 
+              type="radio"
+              v-model="aiMode" 
+              value="document"
+              class="w-4 h-4 text-green-600 mt-1 cursor-pointer"
+            />
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-2xl">📄</span>
@@ -72,7 +83,12 @@
           :ui="{ body: { padding: 'p-4' } }"
         >
           <div class="flex items-start gap-4">
-            <URadio v-model="aiMode" value="conversation" color="purple" />
+            <input 
+              type="radio"
+              v-model="aiMode" 
+              value="conversation"
+              class="w-4 h-4 text-purple-600 mt-1 cursor-pointer"
+            />
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-2xl">🤖</span>
@@ -101,7 +117,7 @@
     </UCard>
 
     <!-- Main AI Chat Interface (Normal & Document modes) -->
-    <UCard v-if="aiMode !== 'conversation'" class="shadow-xl overflow-hidden flex flex-col h-[750px]" :ui="{ body: { padding: 'p-0 flex-1 overflow-hidden' }, header: { padding: 'px-6 py-4' } }">
+    <UCard v-show="aiMode !== 'conversation'" class="shadow-xl overflow-hidden flex flex-col" :ui="{ body: { padding: 'p-0 flex-1' }, header: { padding: 'px-6 py-4' } }">
       <template #header>
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-4">
@@ -141,7 +157,7 @@
       <!-- Chat Body -->
       <div class="flex flex-col h-full bg-gray-50/30 dark:bg-gray-900/10">
         <!-- Messages Area -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-6" ref="messagesContainer">
+        <div class="flex-1 overflow-y-auto space-y-6 max-h-[600px]" ref="messagesContainer" style="scrollbar-width: thin; scrollbar-color: rgb(209, 213, 219) transparent; padding: 1.5rem;">
           <div v-if="conversation.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
             <div class="relative">
                <UIcon name="i-lucide-messages-square" class="w-20 h-20 opacity-10" />
@@ -297,7 +313,7 @@
     </UCard>
 
     <!-- AI Conversation Interface -->
-    <UCard v-if="aiMode === 'conversation'" class="shadow-xl overflow-hidden flex flex-col min-h-[750px]" :ui="{ body: { padding: 'p-0' } }">
+    <UCard v-show="aiMode === 'conversation'" class="shadow-xl overflow-hidden flex flex-col min-h-[750px]" :ui="{ body: { padding: 'p-0' } }">
       <template #header>
         <div class="flex items-center gap-4">
           <UAvatar icon="i-lucide-bot" size="lg" color="purple" variant="soft" class="ring-2 ring-purple-500/20" />
@@ -319,28 +335,28 @@
             </div>
 
             <div class="space-y-4">
-              <UFormGroup label="Provider" size="sm">
+              <UFormField label="Provider" size="sm">
                 <USelect v-model="selectedProviderA" 
                          :options="[{label: 'Google Gemini', value: 'google'}, {label: 'OpenRouter', value: 'openrouter'}, {label: 'Groq Cloud', value: 'groq'}]"
                          :disabled="isConversationActive"
                          @change="onProviderAChange"
                          placeholder="Select Provider" />
-              </UFormGroup>
+              </UFormField>
 
-              <UFormGroup label="Model" size="sm">
+              <UFormField label="Model" size="sm">
                 <USelect v-model="selectedModelA"
                          :options="getModelsForProvider(selectedProviderA).map(m => ({label: m.name, value: m.id}))"
                          :disabled="isConversationActive || !selectedProviderA"
                          placeholder="Select Model" />
-              </UFormGroup>
+              </UFormField>
 
-              <UFormGroup label="API Key" size="sm">
+              <UFormField label="API Key" size="sm">
                 <UInput v-model="apiKeyA"
                         type="password"
                         :disabled="isConversationActive"
                         icon="i-lucide-key"
                         placeholder="Enter API key" />
-              </UFormGroup>
+              </UFormField>
             </div>
           </UCard>
 
@@ -352,39 +368,39 @@
             </div>
 
             <div class="space-y-4">
-              <UFormGroup label="Provider" size="sm">
+              <UFormField label="Provider" size="sm">
                 <USelect v-model="selectedProviderB" 
                          :options="[{label: 'Google Gemini', value: 'google'}, {label: 'OpenRouter', value: 'openrouter'}, {label: 'Groq Cloud', value: 'groq'}]"
                          :disabled="isConversationActive"
                          @change="onProviderBChange"
                          placeholder="Select Provider" />
-              </UFormGroup>
+              </UFormField>
 
-              <UFormGroup label="Model" size="sm">
+              <UFormField label="Model" size="sm">
                 <USelect v-model="selectedModelB"
                          :options="getModelsForProvider(selectedProviderB).map(m => ({label: m.name, value: m.id}))"
                          :disabled="isConversationActive || !selectedProviderB"
                          placeholder="Select Model" />
-              </UFormGroup>
+              </UFormField>
 
-              <UFormGroup label="API Key" size="sm">
+              <UFormField label="API Key" size="sm">
                 <UInput v-model="apiKeyB"
                         type="password"
                         :disabled="isConversationActive"
                         icon="i-lucide-key"
                         placeholder="Enter API key" />
-              </UFormGroup>
+              </UFormField>
             </div>
           </UCard>
         </div>
 
         <!-- Conversation Prompt -->
-        <UFormGroup label="Conversation Topic" class="mb-6">
+        <UFormField label="Conversation Topic" class="mb-6">
           <UTextarea v-model="conversationPrompt"
                     :disabled="isConversationActive"
                     placeholder="Enter a topic or question for the AI models to discuss..."
                     :rows="3" />
-        </UFormGroup>
+        </UFormField>
 
         <!-- Control Buttons -->
         <div class="flex flex-wrap items-center gap-3">
@@ -416,17 +432,17 @@
           </UButton>
 
           <div class="ml-auto flex items-center gap-2" v-if="conversationHistory.length > 0">
-            <UDropdown :items="[
-              [{ label: 'Export as TXT', icon: 'i-lucide-file-text', click: () => exportConversation('txt') }],
-              [{ label: 'Export as Markdown', icon: 'i-lucide-file-code', click: () => exportConversation('md') }],
-              [{ label: 'Export as JSON', icon: 'i-lucide-code', click: () => exportConversation('json') }],
-              [{ label: 'Export as HTML', icon: 'i-lucide-globe', click: () => exportConversation('html') }],
-              [{ label: 'Copy to Clipboard', icon: 'i-lucide-clipboard', click: copyConversationToClipboard }]
-            ]" :popper="{ placement: 'bottom-end' }">
+            <UDropdownMenu :items="[
+              [{ label: 'Export as TXT', icon: 'i-lucide-file-text', onSelect: () => exportConversation('txt') }],
+              [{ label: 'Export as Markdown', icon: 'i-lucide-file-code', onSelect: () => exportConversation('md') }],
+              [{ label: 'Export as JSON', icon: 'i-lucide-code', onSelect: () => exportConversation('json') }],
+              [{ label: 'Export as HTML', icon: 'i-lucide-globe', onSelect: () => exportConversation('html') }],
+              [{ label: 'Copy to Clipboard', icon: 'i-lucide-clipboard', onSelect: copyConversationToClipboard }]
+            ]">
               <UButton color="blue" variant="soft" icon="i-lucide-download" trailing-icon="i-lucide-chevron-down">
                 Export
               </UButton>
-            </UDropdown>
+            </UDropdownMenu>
           </div>
         </div>
       </div>
@@ -500,9 +516,9 @@
         </div>
       </div>
     </UCard>
-  </UContainer>
-</template>
-
+    </ClientOnly>
+    </UContainer>
+    </template>
 <script setup>
 import { ref, nextTick, computed, onMounted } from 'vue';
 import { useAIConfig } from '~/composables/ai/useAIConfig';
@@ -576,7 +592,11 @@ const showConversationExportMenu = ref(false);
 
 // Lifecycle
 onMounted(() => {
-  initializeConversation();
+  isMounted.value = true;
+  // Only initialize conversation on client-side after hydration
+  nextTick(() => {
+    initializeConversation();
+  });
 });
 
 // Helper: Open News
@@ -614,8 +634,14 @@ const providerModels = {
 const getModelsForProvider = (providerId) => providerModels[providerId] || [];
 const getProviderName = (id) => AI_PROVIDERS.find(p => p.id === id)?.name || id;
 
+// Track if component is mounted (client-side)
+const isMounted = ref(false);
+
 // AI Info Text
 const aiDisplayInfo = computed(() => {
+  // Prevent hydration mismatch by only showing dynamic content after mount
+  if (!isMounted.value) return 'AI Assistant';
+  
   if (!isConfigured.value) return 'AI Not Configured';
   const providerName = getProviderName(aiConfig.value.provider);
   const modelName = currentModel.value?.name || aiConfig.value.model;
@@ -775,8 +801,9 @@ const sendToAI = async () => {
   }
 
   const req = userInput.value;
+  const timestamp = Date.now();
   if (req !== 'SYSTEM_INIT') {
-    conversation.value.push({ id: Date.now(), type: 'user', content: req, timestamp: Date.now() });
+    conversation.value.push({ id: `user-${timestamp}`, type: 'user', content: req, timestamp });
   }
   
   userInput.value = '';
@@ -784,12 +811,12 @@ const sendToAI = async () => {
   scrollToBottom();
 
   // Create the AI response placeholder
-  const aiMessageId = Date.now();
+  const aiMessageId = `ai-${timestamp}`;
   const aiMessage = { 
     id: aiMessageId, 
     type: 'ai', 
     content: '', 
-    timestamp: aiMessageId, 
+    timestamp: timestamp + 1, 
     isStreaming: true,
     suggestions: [],
     actionButtons: []
@@ -944,10 +971,9 @@ const onProviderBChange = () => { selectedModelB.value = ''; };
 const openAISettings = () => { window.dispatchEvent(new CustomEvent('open-global-settings', { detail: { activeTab: 'ai' } })); };
 
 const initializeConversation = async () => {
-  if (conversation.value.length === 0) {
-    userInput.value = 'SYSTEM_INIT';
-    await sendToAI();
-  }
+  // Skip automatic initialization to prevent hydration mismatches
+  // Users can start a conversation manually
+  return;
 };
 
 const exportConversation = (f) => { showNotification(`Exporting as ${f}...`, 'info'); };
@@ -961,5 +987,32 @@ const copyConversationToClipboard = () => { showNotification('History copied!', 
 }
 .ring-offset-2 {
   --tw-ring-offset-width: 2px;
+}
+
+/* Scrollbar styling for messages container */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(209, 213, 219);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(156, 163, 175);
+}
+
+/* Dark mode scrollbar */
+:dark ::-webkit-scrollbar-thumb {
+  background: rgb(55, 65, 81);
+}
+
+:dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(75, 85, 99);
 }
 </style>

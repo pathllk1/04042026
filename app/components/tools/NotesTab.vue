@@ -6,7 +6,7 @@
       <button @click="openNewNoteModal"
               class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow transition duration-300 w-full sm:w-auto">
         <span class="flex items-center justify-center">
-          <Icon name="heroicons:plus" class="w-5 h-5 mr-2" />
+          <UIcon name="i-lucide-plus" class="w-5 h-5 mr-2" />
           New Note
         </span>
       </button>
@@ -27,11 +27,11 @@
             <div class="flex space-x-2 ml-2 flex-shrink-0">
               <button @click="editNote(note)"
                       class="text-blue-500 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50">
-                <Icon name="heroicons:pencil-square" class="w-5 h-5" />
+                <UIcon name="i-lucide-pencil-square" class="w-5 h-5" />
               </button>
               <button @click="confirmDelete(note)"
                       class="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50">
-                <Icon name="heroicons:trash" class="w-5 h-5" />
+                <UIcon name="i-lucide-trash-2" class="w-5 h-5" />
               </button>
             </div>
           </div>
