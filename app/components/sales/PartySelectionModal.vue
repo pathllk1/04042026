@@ -20,6 +20,7 @@
  *   create-party  ()
  */
 
+import { ref, computed, watch } from 'vue'
 import { getPartyId } from '~/utils/salesUtils'
 import { usePartyManager } from '~/composables/sales/usePartyManager'
 
@@ -48,7 +49,7 @@ const filteredParties = computed(() => {
   if (!term) return props.state.parties
   return props.state.parties.filter(
     (p) =>
-      p.firm.toLowerCase().includes(term) ||
+      p.supply.toLowerCase().includes(term) ||
       (p.gstin || '').toLowerCase().includes(term),
   )
 })
@@ -182,51 +183,71 @@ function gstinListLabel(party) {
     :ui="{ width: 'max-w-3xl' }"
     @update:open="$emit('update:open', $event)"
   >
-    <!-- ════════════════════════════════════════════════════════════════════
-         STEP 1 — Party list
-    ═════════════════════════════════════════════════════════════════════ -->
-    <template v-if="view === 'parties'">
+    <!-- Header Slot -->
+    <template #header>
+      <div v-if="view === 'parties'" class="flex items-center justify-between w-full gap-3">
+        <h3 class="font-bold text-base text-gray-800 shrink-0">Select Party</h3>
 
-      <!-- Header -->
-      <template #header>
-        <div class="flex items-center justify-between w-full gap-3">
-          <h3 class="font-bold text-base text-gray-800 shrink-0">Select Party</h3>
+        <div class="flex items-center gap-2 flex-1 justify-end">
+          <!-- Search -->
+          <UInput
+            v-model="searchTerm"
+            placeholder="Search firm name or GSTIN…"
+            icon="i-lucide-search"
+            size="sm"
+            class="flex-1 max-w-sm"
+            autofocus
+          />
 
-          <div class="flex items-center gap-2 flex-1 justify-end">
-            <!-- Search -->
-            <UInput
-              v-model="searchTerm"
-              placeholder="Search firm name or GSTIN…"
-              icon="i-lucide-search"
-              size="sm"
-              class="flex-1 max-w-sm"
-              autofocus
-            />
+          <!-- New party -->
+          <UButton
+            icon="i-lucide-plus"
+            label="New Party"
+            size="sm"
+            color="primary"
+            @click="$emit('create-party'); $emit('update:open', false)"
+          />
 
-            <!-- New party -->
-            <UButton
-              icon="i-lucide-plus"
-              label="New Party"
-              size="sm"
-              color="primary"
-              @click="$emit('create-party'); $emit('update:open', false)"
-            />
-
-            <!-- Close -->
-            <UButton
-              icon="i-lucide-x"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              @click="$emit('update:open', false)"
-            />
-          </div>
+          <!-- Close -->
+          <UButton
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            @click="$emit('update:open', false)"
+          />
         </div>
-      </template>
+      </div>
 
-      <!-- Body -->
-      <div class="p-3 grid gap-2 bg-gray-50 max-h-[65vh] overflow-y-auto">
+      <div v-else-if="view === 'gstin-select'" class="flex items-center justify-between w-full">
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            @click="view = 'parties'"
+          />
+          <h3 class="font-bold text-base text-gray-800">
+            Select GST Location
+            <span class="text-gray-400 font-normal text-sm ml-1">
+              ({{ allGstins(pendingParty).length }})
+            </span>
+          </h3>
+        </div>
+        <UButton
+          icon="i-lucide-x"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          @click="$emit('update:open', false)"
+        />
+      </div>
+    </template>
 
+    <!-- Body Slot -->
+    <template #body>
+      <div v-if="view === 'parties'" class="p-3 grid gap-2 bg-gray-50 max-h-[65vh] overflow-y-auto">
         <!-- Empty state -->
         <div
           v-if="filteredParties.length === 0"
@@ -246,10 +267,9 @@ function gstinListLabel(party) {
           @click="onPartyClick(party)"
         >
           <div class="min-w-0 flex-1">
-
             <!-- Firm name -->
             <div class="font-bold text-blue-900 text-sm group-hover:text-blue-700 truncate">
-              {{ party.firm }}
+              {{ party.supply }}
             </div>
 
             <!-- GSTIN badges -->
@@ -301,7 +321,6 @@ function gstinListLabel(party) {
                 {{ balanceMap[String(getPartyId(party))].balanceType }}
               </span>
             </div>
-
           </div>
 
           <!-- Arrow -->
@@ -312,43 +331,8 @@ function gstinListLabel(party) {
           </span>
         </div>
       </div>
-    </template>
 
-    <!-- ════════════════════════════════════════════════════════════════════
-         STEP 2 — GSTIN selector (multi-GSTIN parties)
-    ═════════════════════════════════════════════════════════════════════ -->
-    <template v-else-if="view === 'gstin-select'">
-
-      <!-- Header -->
-      <template #header>
-        <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-2">
-            <UButton
-              icon="i-lucide-arrow-left"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              @click="view = 'parties'"
-            />
-            <h3 class="font-bold text-base text-gray-800">
-              Select GST Location
-              <span class="text-gray-400 font-normal text-sm ml-1">
-                ({{ allGstins(pendingParty).length }})
-              </span>
-            </h3>
-          </div>
-          <UButton
-            icon="i-lucide-x"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            @click="$emit('update:open', false)"
-          />
-        </div>
-      </template>
-
-      <!-- GSTIN cards -->
-      <div class="flex-1 overflow-y-auto p-3 grid gap-2 bg-gray-50 max-h-[65vh]">
+      <div v-else-if="view === 'gstin-select'" class="flex-1 overflow-y-auto p-3 grid gap-2 bg-gray-50 max-h-[65vh]">
         <div
           v-for="(loc, idx) in allGstins(pendingParty)"
           :key="idx"
@@ -378,7 +362,6 @@ function gstinListLabel(party) {
           </span>
         </div>
       </div>
-
     </template>
   </UModal>
 </template>

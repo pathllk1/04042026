@@ -1,4 +1,4 @@
-import { defineEventHandler } from 'h3';
+import { defineEventHandler, getRequestPath } from 'h3';
 import { requireCsrfToken } from '../utils/csrf';
 
 export default defineEventHandler(async (event) => {

@@ -23,6 +23,8 @@
  *   create-stock   ()
  */
 
+import { ref, computed, watch } from 'vue'
+
 const props = defineProps({
   open:  { type: Boolean, required: true },
   state: { type: Object,  required: true },
@@ -147,6 +149,7 @@ watch(
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body — stock table ─────────────────────────────────────────────── -->
     <div class="flex-1 overflow-y-auto max-h-[65vh]">
       <table class="w-full text-left border-collapse">
@@ -266,5 +269,6 @@ watch(
         </tbody>
       </table>
     </div>
+    </template>
   </UModal>
 </template>

@@ -1,5 +1,5 @@
 // server/plugins/mongoose.server.ts
-import { connectDB } from '../config/mongoose'
+import { connectDB } from '../utils/dbConnect'
 
 export default defineNitroPlugin(async () => {
   await connectDB()

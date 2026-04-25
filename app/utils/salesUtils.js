@@ -167,7 +167,7 @@ export function populateConsigneeFromBillTo(state) {
   }
 
   state.selectedConsignee = {
-    name:                 state.selectedParty.firm,
+    name:                 state.selectedParty.supply,
     address:              location.address    || '',
     gstin:                location.gstin      || '',
     state:                location.state      || '',

@@ -19,6 +19,7 @@
  * GET /api/inventory/sales/other-charges-types  → $fetch (no CSRF needed)
  */
 
+import { ref, computed, watch, nextTick } from 'vue'
 import { formatCurrency } from '~/utils/salesUtils'
 
 const props = defineProps({
@@ -170,6 +171,7 @@ watch(
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
     <div class="flex-1 overflow-y-auto p-4 bg-white space-y-4">
 
@@ -362,6 +364,7 @@ watch(
         </div>
       </div>
     </div>
+    </template>
 
     <!-- ── Footer ─────────────────────────────────────────────────────────── -->
     <template #footer>

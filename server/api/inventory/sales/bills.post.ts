@@ -1,13 +1,13 @@
 import { H3Event } from 'h3';
-import Bills from '../../models/inventory/Bills';
-import StockReg from '../../models/inventory/StockReg';
-import Stocks from '../../models/inventory/Stocks';
-import Party from '../../models/inventory/Party';
-import Firm from '../../models/Firm';
+import Bills from '../../../models/inventory/Bills';
+import StockReg from '../../../models/inventory/StockReg';
+import Stocks from '../../../models/inventory/Stocks';
+import Party from '../../../models/inventory/Party';
+import Firm from '../../../models/Firm';
 import mongoose from 'mongoose';
-import { createSalesBillLedgerTransactionMongo } from '../../utils/inventoryLedgerMongo';
-import { createStockFilter, createStockUpdateSet } from '../../utils/stockFilterUtils';
-import { selectOptimalGST, validateGSTSelection } from '../../utils/gst-selection';
+import { createSalesBillLedgerTransactionMongo } from '../../../utils/inventoryLedgerMongo';
+import { createStockFilter, createStockUpdateSet } from '../../../utils/stockFilterUtils';
+import { selectOptimalGST, validateGSTSelection } from '../../../utils/gst-selection';
 
 export default defineEventHandler(async (event: H3Event) => {
     let session = null;
@@ -288,7 +288,10 @@ export default defineEventHandler(async (event: H3Event) => {
         }
 
         return {
+            success: true,
             message: 'Bill created successfully',
+            id: bill._id,
+            billNo: bill.bno,
             bill,
             ledgerTransaction: ledgerResult
         };

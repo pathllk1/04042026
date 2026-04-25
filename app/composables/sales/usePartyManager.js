@@ -1,214 +1,223 @@
 /**
- * useInvoiceExport.js
- * Invoice export (CSV and PDF) composable for the Sales Invoice system.
- * Location: app/composables/sales/useInvoiceExport.js
+ * usePartyManager.js
+ * GST lookup and party-field population composable.
+ * Location: app/composables/sales/usePartyManager.js
  *
- * Replaces: invoiceExport.js
+ * Replaces: partyManager.js
  *
- * GET requests (PDF / Excel blob downloads) use $fetch with credentials.
- * No CSRF needed for GET — no useApiWithAuth required here.
- *
- * The removed calculateGrandTotal() from the original is NOT ported —
- * grand total is derived reactively via calculateBillTotals() in salesUtils.js.
+ * POST /api/inventory/sales/gst-lookup  → uses useApiWithAuth (mutating request)
+ * All other helpers are pure functions — no state dependency.
  *
  * Usage in a component:
- *   const { exportingPdf, exportToCsv, exportToPdf, downloadBillFile } = useInvoiceExport(state)
+ *   const { fetchingGst, fetchPartyByGST, populatePartyFromRapidAPI } = usePartyManager()
  */
 
 import { ref } from 'vue'
-import { useToast } from '#imports'
-import { formatCurrency } from '~/utils/salesUtils'
+import useApiWithAuth from '~/composables/auth/useApiWithAuth'
 
-/**
- * @param {import('vue').UnwrapNestedRefs<object>} state
- *   The reactive state object from useSalesState()
- */
-export function useInvoiceExport(state) {
-  const toast = useToast()
+export function usePartyManager() {
+  const { post } = useApiWithAuth()
 
-  const exportingPdf   = ref(false)
-  const exportingExcel = ref(false)
+  // Tracks in-flight GST lookup so the fetch button can show a spinner
+  const fetchingGst = ref(false)
 
-  // ─── CSV (Excel-compatible) export ───────────────────────────────────────────
+  // ─── Address helpers ──────────────────────────────────────────────────────
 
   /**
-   * Builds a CSV string from current state and triggers a browser download.
-   * No API call — entirely client-side.
+   * Builds a single-line address string from the GST API's
+   * place_of_business_principal.address object.
+   *
+   * @param {object} partyData  Raw response from the GST lookup API
+   * @returns {string}
    */
-  function exportToCsv() {
-    try {
-      let csv = 'INVOICE EXPORT\n'
-      csv += `Bill No,${state.meta.billNo}\n`
-      csv += `Date,${state.meta.billDate}\n`
-      csv += `Bill Type,${state.meta.billType}\n`
-      csv += `Reverse Charge,${state.meta.reverseCharge ? 'Yes' : 'No'}\n\n`
+  function formatPowerfulGSTINAddress(partyData) {
+    if (!partyData?.place_of_business_principal) return ''
+    const addr = partyData.place_of_business_principal.address
+    if (!addr) return ''
+    return [
+      addr.door_num,
+      addr.building_name,
+      addr.floor_num,
+      addr.street,
+      addr.location,
+      addr.city,
+      addr.district,
+    ]
+      .filter((p) => p && String(p).trim())
+      .join(', ')
+  }
 
-      if (state.selectedParty) {
-        csv += 'BILL TO\n'
-        csv += `Party,"${state.selectedParty.firm}"\n`
-        csv += `GSTIN,${state.selectedParty.gstin}\n`
-        csv += `Address,"${state.selectedParty.addr}"\n\n`
+  /**
+   * Extracts the 6-digit PIN code from the GST API response.
+   * Returns empty string if the value is absent or not exactly 6 digits.
+   *
+   * @param {object} partyData
+   * @returns {string}
+   */
+  function extractPowerfulGSTINPinCode(partyData) {
+    if (!partyData?.place_of_business_principal) return ''
+    const addr = partyData.place_of_business_principal.address
+    if (!addr?.pin_code) return ''
+    const pinStr = addr.pin_code.toString().trim()
+    return /^\d{6}$/.test(pinStr) ? pinStr : ''
+  }
+
+  // ─── Form population ──────────────────────────────────────────────────────
+
+  /**
+   * Maps a GST API response onto a plain object that matches the create-party
+   * form's v-model fields.
+   *
+   * Returns null and emits a toast-worthy error string if the API response
+   * contains no usable company name.
+   *
+   * @param {object} partyData  Raw response from the GST lookup API
+   * @param {string} gstin      The GSTIN that was looked up
+   * @returns {{ firm, addr, state, pin, stateCode, pan } | null}
+   */
+  function extractPartyFieldsFromGSTData(partyData, gstin) {
+    const displayName = partyData.trade_name || partyData.legal_name || ''
+    if (!displayName) return null
+
+    const address   = formatPowerfulGSTINAddress(partyData) || ''
+    const pinCode   = extractPowerfulGSTINPinCode(partyData) || ''
+    let   stateName = partyData.place_of_business_principal?.address?.state
+                   || partyData.state_jurisdiction
+                   || ''
+    stateName = String(stateName).trim()
+    if (stateName.includes(' - ')) stateName = stateName.split(' - ')[0].trim()
+
+    const stateCode  = gstin?.length >= 2  ? gstin.substring(0, 2)  : ''
+    const pan        = gstin?.length >= 12 ? gstin.substring(2, 12) : ''
+
+    return {
+      firm:      displayName,
+      addr:      address,
+      state:     stateName,
+      pin:       pinCode,
+      stateCode,
+      pan,
+    }
+  }
+
+  /**
+   * Populates a party location object (used for additional GST locations
+   * in the create-party form) from a GST API response.
+   *
+   * @param {object} gstData   Raw GST API response
+   * @param {string} gstin     The GSTIN that was looked up
+   * @returns {{ state, address, pin }}
+   */
+  function extractLocationFieldsFromGSTData(gstData, gstin) {
+    const data = gstData.data || gstData
+
+    let stateName = data.place_of_business_principal?.address?.state
+                 || data.state_jurisdiction
+                 || ''
+
+    const address = [
+      data.place_of_business_principal?.address?.door_num,
+      data.place_of_business_principal?.address?.building_name,
+      data.place_of_business_principal?.address?.floor_num,
+      data.place_of_business_principal?.address?.street,
+      data.place_of_business_principal?.address?.location,
+      data.place_of_business_principal?.address?.city,
+      data.place_of_business_principal?.address?.district,
+    ].filter((p) => p && String(p).trim()).join(', ') || ''
+
+    const rawPin = data.place_of_business_principal?.address?.pin_code || ''
+    const pin    = /^\d{6}$/.test(String(rawPin).trim()) ? rawPin : ''
+
+    return { state: stateName, address, pin }
+  }
+
+  // ─── GST fetch ────────────────────────────────────────────────────────────
+
+  /**
+   * Hits the GST lookup API and returns the raw response data on success,
+   * or throws an Error with a user-facing message on failure.
+   *
+   * The caller (PartyCreateModal.vue or the form's fetch button handler)
+   * is responsible for showing toasts and mapping the result into form fields
+   * via extractPartyFieldsFromGSTData() or extractLocationFieldsFromGSTData().
+   *
+   * Uses useApiWithAuth().post() because the backend endpoint is
+   * a POST (it calls an external paid API and must be CSRF-protected).
+   *
+   * @param {string} gstin  15-character GSTIN string
+   * @returns {Promise<object>}  The raw `data` object from the API response
+   * @throws {Error}
+   */
+  async function fetchGSTDetails(gstin) {
+    if (!gstin || gstin.trim().length !== 15) {
+      throw new Error('Please enter a valid 15-character GSTIN')
+    }
+
+    fetchingGst.value = true
+    try {
+      const result = await post('/api/inventory/sales/gst-lookup', { gstin: gstin.trim() })
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch GST details')
       }
 
-      if (state.selectedConsignee) {
-        csv += 'CONSIGNEE\n'
-        csv += `Name,"${state.selectedConsignee.name}"\n`
-        csv += `Address,"${state.selectedConsignee.address}"\n\n`
+      return result.data || result
+    } finally {
+      fetchingGst.value = false
+    }
+  }
+
+  // ─── Party balance ────────────────────────────────────────────────────────
+
+  /**
+   * Fetches the outstanding balance for a party.
+   * Returns a normalised balance object, or a zeroed default on error.
+   *
+   * GET request — uses $fetch directly (no CSRF needed).
+   *
+   * @param {string} partyId
+   * @returns {Promise<{ balance: number, balanceType: string,
+   *                     balanceFormatted: string }>}
+   */
+  async function fetchPartyBalance(partyId) {
+    const empty = { balance: 0, balanceType: 'Credit', balanceFormatted: '₹0.00' }
+    if (!partyId) return empty
+
+    try {
+      const data = await $fetch(`/api/inventory/sales/party-balance/${partyId}`, {
+        method: 'GET', credentials: 'include',
+      })
+
+      if (!data.success) return empty
+
+      const bal         = data.data?.balance    || 0
+      const balanceType = data.data?.balance_type
+                       || (bal >= 0 ? 'Debit' : 'Credit')
+      const outstanding = data.data?.outstanding ?? Math.abs(bal)
+
+      return {
+        balance: bal,
+        balanceType,
+        balanceFormatted: new Intl.NumberFormat('en-IN', {
+          style: 'currency', currency: 'INR',
+        }).format(outstanding),
       }
-
-      csv += 'ITEMS\n'
-      csv += 'Item,Batch,Qty,Unit,Rate,Disc %,Tax %,Total\n'
-
-      state.cart.forEach((item) => {
-        const qtyForCalc = parseFloat(item.qty) || 0
-        const qty        = item.itemType === 'SERVICE' && qtyForCalc === 0 ? '' : qtyForCalc
-        const rate       = parseFloat(item.rate)  || 0
-        const disc       = parseFloat(item.disc)  || 0
-        const grate      = parseFloat(item.grate) || 0
-
-        let taxableAmount
-        if (item.itemType === 'SERVICE' && qtyForCalc === 0) {
-          // Flat-rate service: total = rate × (1 - disc/100)
-          taxableAmount = rate * (1 - disc / 100)
-        } else {
-          taxableAmount = qtyForCalc * rate - (qtyForCalc * rate * disc) / 100
-        }
-
-        const taxAmount = (taxableAmount * grate) / 100
-        const total     = taxableAmount + taxAmount
-
-        csv += `"${item.item}",`
-        csv += `"${item.itemType === 'SERVICE' ? '' : (item.batch || '-')}",`
-        csv += `"${qty}",`
-        csv += `"${item.itemType === 'SERVICE' ? (item.uom || '') : item.uom}",`
-        csv += `${rate},${disc},${grate},${total.toFixed(2)}\n`
-      })
-
-      csv += '\nOTHER CHARGES\n'
-      csv += 'Charge,Amount,GST %,Total\n'
-
-      state.otherCharges.forEach((charge) => {
-        const amount    = parseFloat(charge.amount)  || 0
-        const gstRate   = parseFloat(charge.gstRate) || 0
-        const gstAmount = (amount * gstRate) / 100
-        csv += `"${charge.name}",${amount},${gstRate},${(amount + gstAmount).toFixed(2)}\n`
-      })
-
-      _triggerDownload(
-        new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
-        `Invoice_${state.meta.billNo}_${state.meta.billDate}.csv`,
-      )
-
-      toast.add({ title: 'Exported to CSV successfully', color: 'success' })
     } catch (err) {
-      console.error('CSV export error:', err)
-      toast.add({ title: 'Export failed: ' + err.message, color: 'error' })
+      console.warn('Failed to fetch party balance:', err.message ?? err)
+      return empty
     }
-  }
-
-  // ─── PDF download ────────────────────────────────────────────────────────────
-
-  /**
-   * Downloads the server-rendered PDF for a saved bill.
-   * Uses $fetch with credentials — cookie auth is automatic.
-   *
-   * @param {string} billId   MongoDB _id of the saved bill
-   */
-  async function exportToPdf(billId) {
-    if (!billId) {
-      toast.add({ title: 'No bill ID — save the invoice first', color: 'warning' })
-      return
-    }
-
-    exportingPdf.value = true
-    try {
-      await _downloadBlobFromApi(
-        `/api/inventory/sales/bills/${billId}/pdf`,
-        `Invoice_${state.meta.billNo || billId}.pdf`,
-      )
-    } catch (err) {
-      console.error('PDF download error:', err)
-      toast.add({ title: 'PDF download failed: ' + err.message, color: 'error' })
-    } finally {
-      exportingPdf.value = false
-    }
-  }
-
-  // ─── Excel download ───────────────────────────────────────────────────────────
-
-  /**
-   * Downloads the server-rendered Excel file for a saved bill.
-   *
-   * @param {string} billId   MongoDB _id of the saved bill
-   */
-  async function exportToExcel(billId) {
-    if (!billId) {
-      toast.add({ title: 'No bill ID — save the invoice first', color: 'warning' })
-      return
-    }
-
-    exportingExcel.value = true
-    try {
-      await _downloadBlobFromApi(
-        `/api/inventory/sales/bills/${billId}/excel`,
-        `Invoice_${state.meta.billNo || billId}.xlsx`,
-      )
-    } catch (err) {
-      console.error('Excel download error:', err)
-      toast.add({ title: 'Excel download failed: ' + err.message, color: 'error' })
-    } finally {
-      exportingExcel.value = false
-    }
-  }
-
-  /**
-   * Generic helper — fetches any bill file (pdf / excel) and triggers
-   * a browser download. Shared by exportToPdf() and exportToExcel().
-   *
-   * Uses native fetch with credentials:'include' to stream the blob;
-   * $fetch does not expose raw Response.blob() so we drop down to fetch here.
-   *
-   * @param {string} url
-   * @param {string} filename
-   */
-  async function downloadBillFile(url, filename) {
-    await _downloadBlobFromApi(url, filename)
-  }
-
-  // ─── Private helpers ─────────────────────────────────────────────────────────
-
-  async function _downloadBlobFromApi(url, filename) {
-    const response = await fetch(url, {
-      method:      'GET',
-      credentials: 'include',
-    })
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-    const blob      = await response.blob()
-    _triggerDownload(blob, filename)
-  }
-
-  function _triggerDownload(blob, filename) {
-    const url  = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href          = url
-    link.download      = filename
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
   }
 
   return {
-    // Reactive loading flags — bind to UButton :loading
-    exportingPdf,
-    exportingExcel,
-    // Actions
-    exportToCsv,
-    exportToPdf,
-    exportToExcel,
-    downloadBillFile,
+    // Reactive
+    fetchingGst,
+    // Helpers — useful directly in PartyCreateModal & PartyCard
+    formatPowerfulGSTINAddress,
+    extractPowerfulGSTINPinCode,
+    extractPartyFieldsFromGSTData,
+    extractLocationFieldsFromGSTData,
+    // API calls
+    fetchGSTDetails,
+    fetchPartyBalance,
   }
 }

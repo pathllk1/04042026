@@ -26,13 +26,9 @@ export const connectDB = async () => {
   try {
     // Get MongoDB URI from runtime config
     const config = useRuntimeConfig();
-    const mongoUri = config.MONGO_URI;
+    const mongoUri = config.MONGO_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/myapp';
 
-    if (!mongoUri) {
-      throw new Error('MongoDB URI is not configured');
-    }
-
-    console.log(`Connecting to MongoDB in ${config.public.nodeEnv} environment...`);
+    console.log(`Connecting to MongoDB in ${process.env.NODE_ENV || 'development'} environment...`);
 
     // Connect with retry options
     await mongoose.connect(mongoUri, connectOptions);
@@ -72,14 +68,7 @@ export const connectDB = async () => {
   } catch (error) {
     console.error('MongoDB connection error:', error);
     isConnected = false;
-
-    // Don't exit the process on Netlify
-    const config = useRuntimeConfig();
-    if (config.NETLIFY) {
-      console.error('Running on Netlify, not exiting process');
-    } else {
-      process.exit(1);
-    }
+    console.error('Database connection failed but not exiting process');
   }
 };
 

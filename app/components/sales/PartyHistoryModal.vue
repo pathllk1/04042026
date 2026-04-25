@@ -15,6 +15,7 @@
  *   update:open  (false)
  */
 
+import { ref, computed, watch } from 'vue'
 import { getPartyId, isPartySelected, getHistoryCacheKey } from '~/utils/salesUtils'
 
 const props = defineProps({
@@ -150,7 +151,7 @@ watch(
           </h3>
           <p class="text-xs text-gray-500 mt-0.5">
             Party:
-            <strong>{{ state.selectedParty?.firm }}</strong>
+            <strong>{{ state.selectedParty?.supply }}</strong>
             <span
               v-if="historyRows.length > 0"
               class="ml-2 bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded font-mono"
@@ -169,6 +170,7 @@ watch(
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
 
     <!-- Loading skeleton -->
@@ -265,5 +267,6 @@ watch(
         </div>
       </div>
     </div>
+    </template>
   </UModal>
 </template>

@@ -14,6 +14,7 @@ import NewsModal from '~/components/tools/NewsModal.vue'
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(true)
 const isWagesDropdownOpen = ref(false)
+const isInventoryDropdownOpen = ref(false)
 const showSettingsModal = ref(false)
 
 // Tool modals state
@@ -54,6 +55,10 @@ const wagesMenuItems = [
   { label: 'Edit Wages', to: '/wages/edit', icon: 'i-lucide-file-edit', iconClass: 'text-amber-500', description: 'Modify existing wage records' },
   { label: 'Employee Advances', to: '/wages/employee-advances', icon: 'i-lucide-wallet', iconClass: 'text-teal-500', description: 'Manage advances and recoveries' },
   { label: 'Reports', to: '/wages/report', icon: 'i-lucide-file-text', iconClass: 'text-rose-500', description: 'Generate wage and payment reports' }
+]
+
+const inventoryMenuItems = [
+  { label: 'Sales Invoice', to: '/inventory/sls', icon: 'i-lucide-shopping-cart', iconClass: 'text-blue-500', description: 'Create and manage sales invoices' }
 ]
 
 // Event listeners for tool modals
@@ -289,6 +294,48 @@ onUnmounted(() => {
               </template>
             </template>
 
+            <!-- Inventory Dropdown Section -->
+            <template v-if="isLoggedIn">
+              <UTooltip 
+                text="Inventory"
+                :side="isSidebarCollapsed ? 'right' : undefined"
+              >
+                <button
+                  @click="isInventoryDropdownOpen = !isInventoryDropdownOpen"
+                  class="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-full text-left group"
+                  :class="[isInventoryDropdownOpen && 'bg-gray-100 dark:bg-gray-800']"
+                >
+                  <UIcon name="i-lucide-package" class="text-xl shrink-0 text-blue-500" />
+                  <span v-if="!isSidebarCollapsed" class="text-sm font-medium truncate flex-1">Inventory</span>
+                  <UIcon 
+                    v-if="!isSidebarCollapsed"
+                    name="i-lucide-chevron-down" 
+                    class="text-sm shrink-0 transition-transform"
+                    :class="[isInventoryDropdownOpen && 'rotate-180']"
+                  />
+                </button>
+              </UTooltip>
+              
+              <!-- Inventory Items -->
+              <template v-if="isInventoryDropdownOpen">
+                <UTooltip 
+                  v-for="item in inventoryMenuItems" 
+                  :key="item.to"
+                  :text="item.label"
+                  :side="isSidebarCollapsed ? 'right' : undefined"
+                >
+                  <NuxtLink 
+                    :to="item.to" 
+                    class="flex items-center gap-3 px-6 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group text-sm"
+                    active-class="bg-gray-100 dark:bg-gray-800 text-primary font-medium"
+                  >
+                    <UIcon :name="item.icon" :class="['text-lg shrink-0', item.iconClass]" />
+                    <span v-if="!isSidebarCollapsed" class="font-medium truncate">{{ item.label }}</span>
+                  </NuxtLink>
+                </UTooltip>
+              </template>
+            </template>
+
             <!-- Documents Link -->
             <template v-if="isLoggedIn">
               <UTooltip 
@@ -378,6 +425,24 @@ onUnmounted(() => {
               </div>
               <NuxtLink 
                 v-for="item in wagesMenuItems" 
+                :key="item.to"
+                :to="item.to" 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                active-class="bg-gray-100 dark:bg-gray-800 text-primary font-semibold"
+                @click="isMobileMenuOpen = false"
+              >
+                <UIcon :name="item.icon" :class="['text-xl', item.iconClass]" />
+                <span>{{ item.label }}</span>
+              </NuxtLink>
+            </template>
+
+            <!-- Inventory Section -->
+            <template v-if="isLoggedIn">
+              <div class="pt-2 mt-2 border-t">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 px-4 py-2 uppercase">Inventory</p>
+              </div>
+              <NuxtLink 
+                v-for="item in inventoryMenuItems" 
                 :key="item.to"
                 :to="item.to" 
                 class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

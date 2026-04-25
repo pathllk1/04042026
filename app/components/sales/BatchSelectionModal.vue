@@ -15,6 +15,8 @@
  *   select-batch         (stockWithBatch)  — a batch was chosen
  */
 
+import { computed } from 'vue'
+
 const props = defineProps({
   open:  { type: Boolean, required: true },
   stock: { type: Object,  default: () => ({}) },
@@ -69,6 +71,7 @@ function close() {
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
     <div class="p-4 space-y-2.5 max-h-96 overflow-y-auto bg-gray-50">
 
@@ -131,5 +134,6 @@ function close() {
       </div>
 
     </div>
+    </template>
   </UModal>
 </template>

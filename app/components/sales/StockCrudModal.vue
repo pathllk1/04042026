@@ -19,6 +19,7 @@
  * PUT  /api/inventory/sales/stocks/:id   → useApiWithAuth().put()
  */
 
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import useApiWithAuth from '~/composables/auth/useApiWithAuth'
 
 const props = defineProps({
@@ -292,6 +293,7 @@ async function handleEdit() {
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
     <div class="p-5 grid grid-cols-2 gap-x-5 gap-y-3 overflow-y-auto max-h-[72vh]">
 
@@ -465,6 +467,7 @@ async function handleEdit() {
       </div>
 
     </div>
+    </template>
 
     <!-- ── Footer ─────────────────────────────────────────────────────────── -->
     <template #footer>

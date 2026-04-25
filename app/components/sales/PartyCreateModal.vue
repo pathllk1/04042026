@@ -17,6 +17,7 @@
  * POST /api/inventory/sales/gst-lookup    → via usePartyManager().fetchGSTDetails()
  */
 
+import { ref, reactive, watch } from 'vue'
 import { INDIA_STATE_CODES }         from '~/composables/sales/useSalesState'
 import { usePartyManager }            from '~/composables/sales/usePartyManager'
 import useApiWithAuth                 from '~/composables/auth/useApiWithAuth'
@@ -159,7 +160,7 @@ async function onSubmit() {
       pan:          form.pan.trim()     || undefined,
       addr:         form.addr.trim()    || undefined,
       state:        form.state.trim()   || undefined,
-      supply:       form.state.trim()   || undefined,  // backend alias
+      supply:       form.firm.trim() || undefined,  // backend alias
       pin:          form.pin.trim()     || undefined,
       state_code:   form.state_code
         ? form.state_code.toString().padStart(2, '0')
@@ -214,6 +215,7 @@ watch(() => props.open, (isOpen) => { if (isOpen) resetForm() })
       </div>
     </template>
 
+    <template #body>
     <!-- ── Body ───────────────────────────────────────────────────────────── -->
     <div class="p-4 space-y-3 overflow-y-auto max-h-[72vh]">
 
@@ -413,6 +415,7 @@ watch(() => props.open, (isOpen) => { if (isOpen) resetForm() })
       </div>
 
     </div>
+    </template>
 
     <!-- ── Footer ─────────────────────────────────────────────────────────── -->
     <template #footer>
