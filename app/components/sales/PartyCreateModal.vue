@@ -168,7 +168,7 @@ async function onSubmit() {
       gstLocations: gstLocations.value,
     }
 
-    const result = await post('/api/inventory/sales/parties', payload)
+    const result = await post('/api/inventory/sls/parties', payload)
     toast.add({ title: 'Party created successfully!', color: 'success' })
     emit('saved', result.data || result)
     emit('update:open', false)

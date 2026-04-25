@@ -221,7 +221,7 @@ async function handleCreate() {
     ...(batches ? { batches: JSON.stringify(batches) } : {}),
   }
 
-  await post('/api/inventory/sales/stocks', payload)
+  await post('/api/inventory/sls/stocks', payload)
   toast.add({ title: 'Stock item created successfully!', color: 'success' })
   emit('saved')
   emit('update:open', false)
@@ -253,7 +253,7 @@ async function handleEdit() {
     ...(batches ? { batches: JSON.stringify(batches) } : {}),
   }
 
-  await put(`/api/inventory/sales/stocks/${stockId}`, payload)
+  await put(`/api/inventory/sls/stocks/${stockId}`, payload)
   toast.add({ title: 'Stock item updated successfully!', color: 'success' })
   emit('saved')
   emit('update:open', false)
@@ -263,7 +263,7 @@ async function handleEdit() {
 <template>
   <UModal
     :open="open"
-    :ui="{ width: 'max-w-2xl' }"
+    :ui="{ content: 'max-w-6xl' }"
     @update:open="$emit('update:open', $event)"
   >
     <!-- ── Header ──────────────────────────────────────────────────────────── -->

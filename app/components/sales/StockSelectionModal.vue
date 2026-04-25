@@ -107,7 +107,7 @@ watch(
 <template>
   <UModal
     :open="open"
-    :ui="{ width: 'max-w-6xl' }"
+    :ui="{ content: 'max-w-6xl' }"
     @update:open="$emit('update:open', $event)"
   >
     <!-- ── Header ──────────────────────────────────────────────────────────── -->

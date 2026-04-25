@@ -123,7 +123,7 @@ export function useInvoiceExport(state) {
     exportingPdf.value = true
     try {
       await _downloadBlobFromApi(
-        `/api/inventory/sales/bills/${billId}/pdf`,
+        `/api/inventory/sls/bills/${billId}/pdf`,
         `Invoice_${state.meta.billNo || billId}.pdf`,
       )
     } catch (err) {
@@ -150,7 +150,7 @@ export function useInvoiceExport(state) {
     exportingExcel.value = true
     try {
       await _downloadBlobFromApi(
-        `/api/inventory/sales/bills/${billId}/excel`,
+        `/api/inventory/sls/bills/${billId}/excel`,
         `Invoice_${state.meta.billNo || billId}.xlsx`,
       )
     } catch (err) {

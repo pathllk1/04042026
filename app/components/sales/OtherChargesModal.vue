@@ -61,7 +61,7 @@ const filteredSuggestions = computed(() => {
 async function loadChargeTypes() {
   if (chargesLoaded.value) return
   try {
-    const data = await $fetch('/api/inventory/sales/other-charges-types', {
+    const data = await $fetch('/api/inventory/sls/other-charges-types', {
       method: 'GET', credentials: 'include',
     })
     if (data.success) existingCharges.value = data.data || []
@@ -151,7 +151,7 @@ watch(
 <template>
   <UModal
     :open="open"
-    :ui="{ width: 'max-w-4xl' }"
+    :ui="{ content: 'max-w-6xl' }"
     @update:open="$emit('update:open', $event)"
   >
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
@@ -176,10 +176,10 @@ watch(
     <div class="flex-1 overflow-y-auto p-4 bg-white space-y-4">
 
       <!-- ── Add form ──────────────────────────────────────────────────────── -->
-      <div class="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+      <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
 
         <!-- Row 1: Name + Type -->
-        <div class="col-span-2 grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3">
 
           <!-- Charge name with autocomplete -->
           <div class="relative">
@@ -190,6 +190,7 @@ watch(
               v-model="chargeName"
               placeholder="e.g. Freight, Packing"
               autocomplete="off"
+              class="w-full"
               @focus="showSuggestions = true"
               @blur="hideSuggestions"
             />
@@ -235,44 +236,47 @@ watch(
         </div>
 
         <!-- Row 2: HSN + Amount + GST + Button -->
-        <div>
-          <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
-            HSN/SAC Code
-          </label>
-          <UInput v-model="chargeHsn" placeholder="e.g. 9965" />
-        </div>
+        <div class="grid grid-cols-4 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
+              HSN/SAC Code
+            </label>
+            <UInput v-model="chargeHsn" placeholder="e.g. 9965" class="w-full" />
+          </div>
 
-        <div>
-          <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
-            Amount (₹) *
-          </label>
-          <UInput
-            id="charge-amount-input"
-            v-model="chargeAmount"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-          />
-        </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
+              Amount (₹) *
+            </label>
+            <UInput
+              id="charge-amount-input"
+              v-model="chargeAmount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              class="w-full"
+            />
+          </div>
 
-        <div>
-          <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
-            GST %
-          </label>
-          <USelect
-            v-model="chargeGst"
-            :items="GST_RATES.map(r => ({ label: `${r}%`, value: r }))"
-            class="w-full"
-          />
-        </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wide">
+              GST %
+            </label>
+            <USelect
+              v-model="chargeGst"
+              :items="GST_RATES.map(r => ({ label: `${r}%`, value: r }))"
+              class="w-full"
+            />
+          </div>
 
-        <div class="flex items-end">
-          <UButton
-            label="+ Add Charge"
-            color="primary"
-            class="w-full justify-center"
-            @click="addCharge"
-          />
+          <div class="flex items-end">
+            <UButton
+              label="+ Add Charge"
+              color="primary"
+              class="w-full justify-center"
+              @click="addCharge"
+            />
+          </div>
         </div>
       </div>
 

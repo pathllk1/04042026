@@ -180,7 +180,7 @@ function gstinListLabel(party) {
 <template>
   <UModal
     :open="open"
-    :ui="{ width: 'max-w-3xl' }"
+    :ui="{ content: 'max-w-6xl' }"
     @update:open="$emit('update:open', $event)"
   >
     <!-- Header Slot -->

@@ -66,7 +66,7 @@
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 
           <!-- Sticky gradient header -->
-          <thead class="bg-gradient-to-r from-teal-500 to-indigo-600 sticky top-0 z-10">
+          <thead class="bg-gradient-to-r from-emerald-500 via-purple-500 to-red-500 sticky top-0 z-10">
             <tr>
               <!-- Sl. No. -->
               <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-12">

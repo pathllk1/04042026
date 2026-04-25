@@ -159,7 +159,7 @@ export function useSalesState() {
 
   async function fetchCurrentUserFirmName() {
     try {
-      const data = await $fetch('/api/inventory/sales/current-firm', {
+      const data = await $fetch('/api/inventory/sls/current-firm', {
         method:      'GET',
         credentials: 'include',
       })
@@ -183,7 +183,7 @@ export function useSalesState() {
 
   async function fetchNextBillNumber() {
     try {
-      const data = await $fetch('/api/inventory/sales/next-bill-number', {
+      const data = await $fetch('/api/inventory/sls/next-bill-number', {
         method:      'GET',
         credentials: 'include',
       })
@@ -203,7 +203,7 @@ export function useSalesState() {
   async function fetchData() {
     // ── Stocks ──────────────────────────────────────────────────────────────
     try {
-      const stockData = await $fetch('/api/inventory/sales/stocks', {
+      const stockData = await $fetch('/api/inventory/sls/stocks', {
         method: 'GET', credentials: 'include',
       })
       state.stocks = stockData.success && Array.isArray(stockData.data)
@@ -215,7 +215,7 @@ export function useSalesState() {
 
     // ── Parties ─────────────────────────────────────────────────────────────
     try {
-      const partyData = await $fetch('/api/inventory/sales/parties', {
+      const partyData = await $fetch('/api/inventory/sls/parties', {
         method: 'GET', credentials: 'include',
       })
       state.parties = partyData.success && Array.isArray(partyData.data)
@@ -229,7 +229,7 @@ export function useSalesState() {
     if (!state.meta.billNo || state.meta.billNo === 'Will be generated on save') {
       state.meta.billNo = 'Will be generated on save'
       try {
-        const previewData = await $fetch('/api/inventory/sales/next-bill-number', {
+        const previewData = await $fetch('/api/inventory/sls/next-bill-number', {
           method: 'GET', credentials: 'include',
         })
         if (previewData.success && previewData.nextBillNumber) {
@@ -256,7 +256,7 @@ export function useSalesState() {
     // ── Firm locations (safety net — primary path is fetchCurrentUserFirmName) ─
     if (state.firmLocations.length === 0) {
       try {
-        const firmData = await $fetch('/api/inventory/sales/current-firm', {
+        const firmData = await $fetch('/api/inventory/sls/current-firm', {
           method: 'GET', credentials: 'include',
         })
         if (firmData.success && Array.isArray(firmData.data?.locations)) {
@@ -281,7 +281,7 @@ export function useSalesState() {
    */
   async function loadExistingBillData(billId) {
     // $fetch throws on non-2xx — let it bubble up to the caller
-    const billData = await $fetch(`/api/inventory/sales/bills/${billId}`, {
+    const billData = await $fetch(`/api/inventory/sls/bills/${billId}`, {
       method: 'GET', credentials: 'include',
     })
 

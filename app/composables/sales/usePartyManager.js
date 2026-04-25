@@ -155,7 +155,7 @@ export function usePartyManager() {
 
     fetchingGst.value = true
     try {
-      const result = await post('/api/inventory/sales/gst-lookup', { gstin: gstin.trim() })
+      const result = await post('/api/inventory/sls/gst-lookup', { gstin: gstin.trim() })
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch GST details')
@@ -184,7 +184,7 @@ export function usePartyManager() {
     if (!partyId) return empty
 
     try {
-      const data = await $fetch(`/api/inventory/sales/party-balance/${partyId}`, {
+      const data = await $fetch(`/api/inventory/sls/party-balance/${partyId}`, {
         method: 'GET', credentials: 'include',
       })
 

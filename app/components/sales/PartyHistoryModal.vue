@@ -81,7 +81,7 @@ async function loadHistory() {
   loading.value = true
   try {
     const response = await $fetch(
-      `/api/inventory/sales/party-item-history?partyId=${partyId}&stockId=${props.stock.id}&limit=all`,
+      `/api/inventory/sls/party-item-history?partyId=${partyId}&stockId=${props.stock.id}&limit=all`,
       { method: 'GET', credentials: 'include' },
     )
 

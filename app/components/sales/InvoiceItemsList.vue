@@ -69,7 +69,7 @@ async function loadServiceSuggestions() {
     return
   }
   try {
-    const data = await $fetch('/api/inventory/sales/services', {
+    const data = await $fetch('/api/inventory/sls/services', {
       method: 'GET', credentials: 'include',
     })
     if (data.success && Array.isArray(data.data)) {

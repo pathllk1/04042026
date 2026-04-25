@@ -231,7 +231,7 @@ async function onStockSaved() {
   showStockCrud.value = false
   // Refresh stocks list
   try {
-    const data = await $fetch('/api/inventory/sales/stocks', {
+    const data = await $fetch('/api/inventory/sls/stocks', {
       method: 'GET', credentials: 'include',
     })
     if (data.success && Array.isArray(data.data)) state.stocks = data.data
@@ -350,7 +350,7 @@ async function saveBill() {
           })),
         narration: state.meta.narration,
       }
-      result = await post('/api/inventory/sales/create-credit-note', returnData)
+      result = await post('/api/inventory/sls/create-credit-note', returnData)
     } else {
       const billData = {
         meta: {
@@ -371,9 +371,9 @@ async function saveBill() {
       }
 
       if (isEditMode && editBillId) {
-        result = await put(`/api/inventory/sales/bills/${editBillId}`, billData)
+        result = await put(`/api/inventory/sls/bills/${editBillId}`, billData)
       } else {
-        result = await post('/api/inventory/sales/bills', billData)
+        result = await post('/api/inventory/sls/bills', billData)
       }
     }
 
