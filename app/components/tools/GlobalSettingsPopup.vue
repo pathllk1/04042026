@@ -465,6 +465,13 @@
       </UCard>
     </template>
   </UModal>
+
+  <FirmCrudModal
+    v-model:isOpen="firmModalOpen"
+    :mode="firmModalMode"
+    :firmData="selectedFirmData"
+    @saved="handleFirmSaved"
+  />
 </template>
 
 <script setup>
@@ -476,6 +483,7 @@ import { AI_PROVIDERS } from '~/types/ai';
 import NotesTab from '~/components/tools/NotesTab.vue';
 import AIUsageMonitor from '~/components/tools/AIUsageMonitor.vue';
 import CustomProviderManager from '~/components/tools/CustomProviderManager.vue';
+import FirmCrudModal from '~/components/tools/FirmCrudModal.vue';
 
 // Explicitly import composables from subdirectories as they are not auto-imported by default
 import useUserRole from '~/composables/auth/useUserRole';
@@ -568,6 +576,11 @@ const userDataImportLoading = ref(false);
 const selectedUserDataFile = ref(null);
 const userDataMessage = ref('');
 const userDataSuccess = ref(false);
+
+// Firm modal state
+const firmModalOpen = ref(false);
+const firmModalMode = ref('create');
+const selectedFirmData = ref(null);
 
 const userDataExportOptions = ref({
   includeAuthTokens: false,
@@ -721,6 +734,14 @@ const allTools = [
     uIcon: 'i-heroicons-command-line',
     path: '/admin',
     requiredRole: 'admin'
+  },
+  {
+    id: 'firms',
+    name: 'Firms',
+    description: 'Manage business entities and locations',
+    uIcon: 'i-heroicons-building-library',
+    action: 'openFirms',
+    requiredRole: 'authenticated'
   }
 ];
 
@@ -815,6 +836,17 @@ const showStatus = (msg, success) => {
   setTimeout(() => { userDataMessage.value = ''; }, 5000);
 };
 
+const handleFirmSaved = async () => {
+  firmModalOpen.value = false;
+  selectedFirmData.value = null;
+  
+  // Refresh the sales page state by triggering a custom event
+  // This will cause the sales page to re-fetch firm data
+  if (process.client) {
+    window.dispatchEvent(new CustomEvent('firm-updated', { detail: { timestamp: Date.now() } }))
+  }
+};
+
 const saveSettings = async () => {
   try {
     const valid = ensureValidSettings(settings.value);
@@ -884,6 +916,13 @@ const navigateTo = (pathOrAction) => {
     return;
   }
 
+  if (pathOrAction === 'openFirms') {
+    firmModalMode.value = 'create';
+    selectedFirmData.value = null;
+    firmModalOpen.value = true;
+    return;
+  }
+
   router.push(pathOrAction);
   closePopup();
 };
@@ -924,7 +963,7 @@ onUnmounted(() => {
   window.removeEventListener('open-global-settings', handleOpenGlobalSettings);
 });
 
-defineExpose({ openPopup, closePopup });
+defineExpose({ openPopup, closePopup, handleFirmSaved });
 </script>
 
 <style scoped>

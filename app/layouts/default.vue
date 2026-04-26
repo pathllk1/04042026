@@ -58,7 +58,8 @@ const wagesMenuItems = [
 ]
 
 const inventoryMenuItems = [
-  { label: 'Sales Invoice', to: '/inventory/sls', icon: 'i-lucide-shopping-cart', iconClass: 'text-blue-500', description: 'Create and manage sales invoices' }
+  { label: 'Sales Invoice', to: '/inventory/sls', icon: 'i-lucide-shopping-cart', iconClass: 'text-blue-500', description: 'Create and manage sales invoices' },
+  { label: 'Reports', to: '/inventory/reports', icon: 'i-lucide-file-text', iconClass: 'text-rose-500', description: 'View sales and inventory reports' }
 ]
 
 // Event listeners for tool modals

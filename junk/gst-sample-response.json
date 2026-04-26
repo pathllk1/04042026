@@ -1,0 +1,40 @@
+{
+  "data": {
+    "place_of_business_additional": [],
+    "gstin": "19APJPD8428D1ZV",
+    "legal_name": "PRAKASH  DAS",
+    "state_jurisdiction": "SILIGURI",
+    "centre_jurisdiction": "II RANGE",
+    "registration_date": "01/07/2017",
+    "business_constitution": "Proprietorship",
+    "type": "Regular",
+    "business_activity_nature": [
+      "Works Contract",
+      "Service Provision"
+    ],
+    "status": "Active",
+    "cancellation_date": "",
+    "trade_name": "PRAKASH ENTERPRISE",
+    "state_jurisdiction_code": "WB089",
+    "centre_jurisdiction_code": "WE0102",
+    "place_of_business_principal": {
+      "address": {
+        "building_name": "",
+        "street": "KALPANA CHOWLA SARANI",
+        "location": "NABAGRAM",
+        "door_num": "1128/N",
+        "state": "West Bengal",
+        "floor_num": "",
+        "lattitude": "",
+        "longitude": "",
+        "district": "Jalpaiguri",
+        "city": "",
+        "pin_code": "734007"
+      },
+      "nature": [
+        "Works Contract",
+        "Service Provision"
+      ]
+    }
+  }
+}

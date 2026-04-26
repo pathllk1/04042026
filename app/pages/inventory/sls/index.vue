@@ -154,7 +154,18 @@ async function init() {
   }
 }
 
-onMounted(init)
+onMounted(() => {
+  init()
+  
+  // Listen for firm updates from GlobalSettingsPopup
+  if (process.client) {
+    window.addEventListener('firm-updated', async () => {
+      console.log('[SALES] Firm updated, refreshing...')
+      await fetchCurrentUserFirmName()
+      await fetchData()
+    })
+  }
+})
 
 // ── Bill-type auto detection ──────────────────────────────────────────────────
 
@@ -169,15 +180,17 @@ function autoSetBillType() {
 
 // ── Firm GSTIN selector ───────────────────────────────────────────────────────
 
-const firmGstinItems = computed(() =>
-  state.firmLocations.map((l) => ({
+const firmGstinItems = computed(() => {
+  return state.firmLocations.map((l) => ({
     label: `${l.gst_number || 'No GSTIN'} — ${l.state || l.state_code || ''}${l.is_default ? ' (Default)' : ''}`,
     value: l.gst_number || '',
-  })),
-)
+  }))
+})
 
 const activeFirmGstin = computed({
-  get: () => state.activeFirmLocation?.gst_number || '',
+  get: () => {
+    return state.activeFirmLocation?.gst_number || ''
+  },
   set: (val) => {
     state.activeFirmLocation = state.firmLocations.find((l) => l.gst_number === val) || null
     autoSetBillType()
@@ -444,7 +457,12 @@ function onKeydown(e) {
 }
 
 onMounted(() => document.addEventListener('keydown', onKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+  if (process.client) {
+    window.removeEventListener('firm-updated', init)
+  }
+})
 
 // ── Edit-party helper ─────────────────────────────────────────────────────────
 
@@ -542,11 +560,8 @@ function openEditParty() {
             />
           </div>
 
-          <!-- Firm GSTIN selector (multi-location firms only) -->
-          <div
-            v-if="state.firmLocations.length > 1"
-            class="flex flex-col"
-          >
+          <!-- Firm GSTIN selector (always visible) -->
+          <div class="flex flex-col">
             <label class="text-[10px] uppercase text-gray-500 font-bold tracking-wider">
               Billing from GSTIN
             </label>
@@ -629,6 +644,25 @@ function openEditParty() {
             icon="i-lucide-save"
             @click="saveBill"
           />
+        </div>
+      </div>
+
+      <!-- ── GST List (All firm locations) ──────────────────────────── -->
+      <div v-if="state.firmLocations.length > 0" class="bg-indigo-50 border-b border-indigo-200 px-4 py-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-[10px] uppercase text-indigo-700 font-bold tracking-wider">Available GSTINs:</span>
+          <div class="flex gap-2 flex-wrap">
+            <UBadge
+              v-for="loc in state.firmLocations"
+              :key="loc.gst_number"
+              :label="`${loc.gst_number} ${loc.is_default ? '(Default)' : ''}`"
+              :color="activeFirmGstin === loc.gst_number ? 'indigo' : 'gray'"
+              variant="subtle"
+              size="sm"
+              class="cursor-pointer hover:opacity-80 transition"
+              @click="activeFirmGstin = loc.gst_number"
+            />
+          </div>
         </div>
       </div>
 
