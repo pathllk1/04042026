@@ -208,6 +208,24 @@
                   </UCard>
                 </div>
               </section>
+
+              <section>
+                <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <UIcon name="i-heroicons-calculator" class="w-5 h-5 text-indigo-500" />
+                  <h3 class="text-lg font-bold">Sales & Inventory Settings</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <UCard :ui="{ body: { padding: 'p-4' } }">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="font-bold text-sm">GST (Goods & Services Tax)</div>
+                        <div class="text-xs text-gray-500">Enable/disable GST calculations in sales invoices</div>
+                      </div>
+                      <USwitch v-model="settings.gstEnabled" />
+                    </div>
+                  </UCard>
+                </div>
+              </section>
             </div>
 
             <!-- AI Settings Tab -->
@@ -461,6 +479,7 @@ import CustomProviderManager from '~/components/tools/CustomProviderManager.vue'
 
 // Explicitly import composables from subdirectories as they are not auto-imported by default
 import useUserRole from '~/composables/auth/useUserRole';
+import useApiWithAuth from '~/composables/auth/useApiWithAuth';
 import { useAIConfig } from '~/composables/ai/useAIConfig';
 import { useUserDataManager } from '~/composables/utils/useUserDataManager';
 
@@ -580,6 +599,7 @@ const defaultSettings = {
   notifications: true,
   sounds: false,
   aiModel: 'gemini-2.5-flash',
+  gstEnabled: true,
   visibleTools: {
     calculator: true,
     pdfTools: true,
@@ -795,21 +815,49 @@ const showStatus = (msg, success) => {
   setTimeout(() => { userDataMessage.value = ''; }, 5000);
 };
 
-const saveSettings = () => {
-  const valid = ensureValidSettings(settings.value);
-  localStorage.setItem('app_settings', JSON.stringify(valid));
-  applySettings();
-  closePopup();
+const saveSettings = async () => {
+  try {
+    const valid = ensureValidSettings(settings.value);
+    console.log('Saving settings:', valid);
+    localStorage.setItem('app_settings', JSON.stringify(valid));
+    console.log('Saved to localStorage, GST:', valid.gstEnabled);
+    
+    // Save GST setting to database if user is authenticated
+    if (isAuthenticated.value && valid.gstEnabled !== undefined) {
+      try {
+        console.log('Saving GST to database:', valid.gstEnabled);
+        const apiWithAuth = useApiWithAuth()
+        const response = await apiWithAuth.put('/api/settings/gst-config', { gst_enabled: valid.gstEnabled })
+        console.log('Database save response:', response);
+      } catch (err) {
+        console.error('Could not save GST setting to database:', err)
+        // Still continue - localStorage is the fallback
+      }
+    } else {
+      console.warn('Not authenticated or gstEnabled undefined:', { isAuthenticated: isAuthenticated.value, gstEnabled: valid.gstEnabled })
+    }
+    
+    applySettings();
+    closePopup();
+  } catch (err) {
+    console.error('Error in saveSettings:', err)
+  }
 };
 
 const applySettings = () => {
-  document.documentElement.classList.remove('light-theme', 'dark-theme');
-  document.documentElement.classList.add(`${settings.value.theme}-theme`);
-  
-  const sizes = ['text-sm', 'text-base', 'text-lg'];
-  document.documentElement.classList.remove(...sizes);
-  const map = { small: 'text-sm', medium: 'text-base', large: 'text-lg' };
-  document.documentElement.classList.add(map[settings.value.fontSize]);
+  try {
+    if (!settings.value) return;
+    
+    document.documentElement.classList.remove('light-theme', 'dark-theme');
+    document.documentElement.classList.add(`${settings.value.theme}-theme`);
+    
+    const sizes = ['text-sm', 'text-base', 'text-lg'];
+    document.documentElement.classList.remove(...sizes);
+    const map = { small: 'text-sm', medium: 'text-base', large: 'text-lg' };
+    document.documentElement.classList.add(map[settings.value.fontSize]);
+  } catch (err) {
+    console.error('Error applying settings:', err)
+  }
 };
 
 const navigateTo = (pathOrAction) => {

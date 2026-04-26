@@ -241,16 +241,44 @@ export function useSalesState() {
     }
 
     // ── GST enabled flag ─────────────────────────────────────────────────────
+    let gstFetched = false
+    
     try {
-      const gstData = await $fetch('/api/settings/system-config/gst-status', {
+      // First try to fetch from database API
+      const gstData = await $fetch('/api/settings/gst-config', {
         method: 'GET', credentials: 'include',
       })
-      state.gstEnabled = gstData.success
-        ? (gstData.data?.gst_enabled !== false)
-        : true
+      if (gstData.success && gstData.data?.gst_enabled !== undefined) {
+        state.gstEnabled = gstData.data.gst_enabled
+        gstFetched = true
+        console.info('GST setting loaded from database:', state.gstEnabled)
+        return
+      }
     } catch (err) {
-      console.warn('Could not fetch GST status:', err.message ?? err)
-      state.gstEnabled = true
+      console.warn('Could not fetch GST from database:', err.message ?? err)
+    }
+
+    // Fallback to localStorage
+    if (!gstFetched) {
+      try {
+        const savedSettings = localStorage.getItem('app_settings')
+        if (savedSettings) {
+          const appSettings = JSON.parse(savedSettings)
+          if (appSettings.gstEnabled !== undefined) {
+            state.gstEnabled = appSettings.gstEnabled
+            gstFetched = true
+            console.info('GST setting loaded from localStorage:', state.gstEnabled)
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Could not parse app settings:', e)
+      }
+    }
+
+    // If still not fetched, log that we're using the default
+    if (!gstFetched) {
+      console.info('Using default GST setting: enabled')
     }
 
     // ── Firm locations (safety net — primary path is fetchCurrentUserFirmName) ─
@@ -408,6 +436,22 @@ export function useSalesState() {
       dispatchThrough: '',
       narration:       '',
     }
+  }
+
+  // ── Listen for global settings changes ────────────────────────────────────
+  if (process.client) {
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'app_settings') {
+        try {
+          const newSettings = JSON.parse(event.newValue)
+          if (newSettings?.gstEnabled !== undefined) {
+            state.gstEnabled = newSettings.gstEnabled
+          }
+        } catch (e) {
+          console.warn('Could not parse updated app settings:', e)
+        }
+      }
+    })
   }
 
   return {

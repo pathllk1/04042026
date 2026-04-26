@@ -9,6 +9,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     weatherApiKey: process.env.WEATHER_API_KEY || '',
+    rapidApiKey:  process.env.RAPID_API_KEY  || '',
+  rapidApiHost: process.env.RAPID_API_HOST || 'gst-verification.p.rapidapi.com',
     // public runtime config if needed
     public: {}
   }

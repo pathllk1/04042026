@@ -8,7 +8,7 @@
  * 3. Client reads the non-HttpOnly cookie and includes it in requests
  * 4. Server validates that the token in the request matches the HttpOnly cookie
  */
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useCookie, useRuntimeConfig } from '#app';
 
 export default function useCsrf() {
@@ -123,10 +123,14 @@ export default function useCsrf() {
 
   // Track the refresh interval for proper cleanup
   let csrfRefreshInterval = null;
+  let isInitialized = false;
 
-  // Initialize the CSRF token
-  onMounted(async () => {
-    console.log('CSRF: Component mounted - initializing token');
+  // Initialize the CSRF token (called on first use, not in lifecycle hook)
+  const initializeToken = async () => {
+    if (isInitialized) return;
+    isInitialized = true;
+
+    console.log('CSRF: Initializing token');
 
     // First try to get an existing token
     const existingToken = getCsrfToken();
@@ -150,23 +154,26 @@ export default function useCsrf() {
         }
       }, 15 * 60 * 1000); // 15 minutes
     }
-  });
+  };
 
-  // Clean up interval on component unmount
-  onUnmounted(() => {
-    console.log('CSRF: Component unmounting - cleaning up refresh interval');
+  // Clean up interval (can be called manually if needed)
+  const cleanup = () => {
+    console.log('CSRF: Cleaning up refresh interval');
 
     if (csrfRefreshInterval) {
       clearInterval(csrfRefreshInterval);
       csrfRefreshInterval = null;
     }
-  });
+  };
 
   /**
    * Ensure we have a valid CSRF token
    * This is useful before making API requests
    */
   const ensureToken = async () => {
+    // Initialize on first use
+    await initializeToken();
+
     let token = getCsrfToken();
 
     // If no token or token needs refreshing, fetch a new one
@@ -182,6 +189,7 @@ export default function useCsrf() {
     getCsrfToken,
     fetchCsrfToken,
     ensureToken,
-    needsRefresh
+    needsRefresh,
+    cleanup
   };
 }
